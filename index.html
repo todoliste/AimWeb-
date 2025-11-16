@@ -1,9 +1,10 @@
+```html
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AimLab 3D</title>
+    <title>AimLab 3D Pro</title>
     <style>
         * {
             margin: 0;
@@ -12,9 +13,9 @@
         }
 
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             overflow: hidden;
-            background: #0a0a0a;
+            background: #000;
             color: #fff;
             touch-action: none;
         }
@@ -34,7 +35,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -44,86 +45,126 @@
         }
 
         #menu h1 {
-            font-size: clamp(2rem, 8vw, 4rem);
-            margin-bottom: 40px;
-            text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            font-size: clamp(2.5rem, 10vw, 5rem);
+            margin-bottom: 50px;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            background: linear-gradient(45deg, #00f5ff, #ff00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(0, 245, 255, 0.5);
         }
 
         .mode-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
             width: 100%;
-            max-width: 800px;
-            margin-bottom: 30px;
+            max-width: 900px;
+            margin-bottom: 40px;
         }
 
         .mode-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: rgba(0, 0, 0, 0.6);
+            border: 3px solid rgba(0, 245, 255, 0.4);
             color: #fff;
-            padding: 20px;
-            font-size: 1.2rem;
+            padding: 30px 20px;
+            font-size: 1.3rem;
             cursor: pointer;
             transition: all 0.3s;
-            border-radius: 10px;
+            border-radius: 15px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
 
         .mode-btn:hover {
-            background: rgba(0, 255, 255, 0.2);
-            border-color: #0ff;
-            transform: scale(1.05);
+            background: rgba(0, 245, 255, 0.2);
+            border-color: #00f5ff;
+            transform: scale(1.08);
+            box-shadow: 0 0 30px rgba(0, 245, 255, 0.6);
         }
 
         .mode-btn.selected {
-            background: rgba(0, 255, 255, 0.3);
-            border-color: #0ff;
+            background: rgba(0, 245, 255, 0.3);
+            border-color: #00f5ff;
+            box-shadow: 0 0 40px rgba(0, 245, 255, 0.8);
+        }
+
+        .mode-desc {
+            font-size: 0.8rem;
+            margin-top: 10px;
+            opacity: 0.7;
+            text-transform: none;
+            letter-spacing: 1px;
         }
 
         .sensitivity-control {
             width: 100%;
-            max-width: 400px;
-            margin-bottom: 30px;
+            max-width: 450px;
+            margin-bottom: 40px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 25px;
+            border-radius: 15px;
+            border: 2px solid rgba(0, 245, 255, 0.3);
         }
 
         .sensitivity-control label {
             display: block;
-            margin-bottom: 10px;
-            font-size: 1.1rem;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
         }
 
         .sensitivity-control input {
             width: 100%;
-            height: 40px;
+            height: 8px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            border-radius: 5px;
+        }
+
+        .sensitivity-control input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 25px;
+            height: 25px;
+            background: #00f5ff;
+            cursor: pointer;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(0, 245, 255, 0.8);
         }
 
         #start-btn {
-            background: linear-gradient(135deg, #00d4ff, #0066ff);
+            background: linear-gradient(135deg, #00f5ff, #7b00ff);
             border: none;
             color: #fff;
-            padding: 20px 60px;
-            font-size: 1.5rem;
+            padding: 25px 80px;
+            font-size: 1.8rem;
             cursor: pointer;
             border-radius: 50px;
             transition: all 0.3s;
-            box-shadow: 0 5px 20px rgba(0, 100, 255, 0.4);
+            box-shadow: 0 10px 40px rgba(123, 0, 255, 0.6);
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 3px;
         }
 
         #start-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 30px rgba(0, 100, 255, 0.6);
+            transform: translateY(-5px);
+            box-shadow: 0 15px 50px rgba(123, 0, 255, 0.8);
         }
 
         #start-btn:disabled {
-            opacity: 0.5;
+            opacity: 0.3;
             cursor: not-allowed;
         }
 
         #hud {
             position: fixed;
-            top: 20px;
-            left: 20px;
-            right: 20px;
+            top: 0;
+            left: 0;
+            right: 0;
             display: none;
             z-index: 10;
             pointer-events: none;
@@ -132,17 +173,19 @@
         #hud-top {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
+            padding: 20px;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 15px;
         }
 
         .hud-item {
-            background: rgba(0, 0, 0, 0.7);
-            padding: 15px 25px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px 30px;
             border-radius: 10px;
-            font-size: clamp(1rem, 3vw, 1.5rem);
-            border: 2px solid rgba(0, 255, 255, 0.5);
+            font-size: clamp(1.2rem, 4vw, 1.8rem);
+            border: 2px solid rgba(0, 245, 255, 0.6);
+            font-weight: bold;
+            letter-spacing: 2px;
         }
 
         #crosshair {
@@ -150,32 +193,37 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 30px;
-            height: 30px;
+            width: 3px;
+            height: 3px;
+            background: #00ff00;
             display: none;
             pointer-events: none;
             z-index: 20;
+            box-shadow: 0 0 10px #00ff00;
         }
 
         #crosshair::before,
         #crosshair::after {
             content: '';
             position: absolute;
-            background: rgba(0, 255, 255, 0.8);
+            background: #00ff00;
+            box-shadow: 0 0 5px #00ff00;
         }
 
         #crosshair::before {
             width: 2px;
-            height: 100%;
+            height: 20px;
             left: 50%;
-            transform: translateX(-50%);
+            top: 50%;
+            transform: translate(-50%, -50%);
         }
 
         #crosshair::after {
             height: 2px;
-            width: 100%;
+            width: 20px;
             top: 50%;
-            transform: translateY(-50%);
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
 
         #hitmarker {
@@ -183,32 +231,107 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 50px;
-            height: 50px;
+            width: 60px;
+            height: 60px;
             display: none;
             pointer-events: none;
             z-index: 25;
         }
 
         #hitmarker::before,
-        #hitmarker::after {
+        #hitmarker::after,
+        .hitmarker-line {
             content: '';
             position: absolute;
-            background: #0ff;
-            width: 20px;
-            height: 2px;
+            background: #00ff00;
+            width: 25px;
+            height: 3px;
+            box-shadow: 0 0 10px #00ff00;
         }
 
         #hitmarker::before {
-            top: 50%;
+            top: 0;
             left: 0;
-            transform: translateY(-50%) rotate(45deg);
+            transform: rotate(45deg);
         }
 
         #hitmarker::after {
-            top: 50%;
+            top: 0;
             right: 0;
-            transform: translateY(-50%) rotate(-45deg);
+            transform: rotate(-45deg);
+        }
+
+        .hitmarker-line:nth-child(1) {
+            bottom: 0;
+            left: 0;
+            transform: rotate(-45deg);
+        }
+
+        .hitmarker-line:nth-child(2) {
+            bottom: 0;
+            right: 0;
+            transform: rotate(45deg);
+        }
+
+        #mobile-controls {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: none;
+            z-index: 15;
+            padding: 20px;
+            pointer-events: none;
+        }
+
+        #mobile-controls.active {
+            pointer-events: auto;
+        }
+
+        .joystick-container {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 3px solid rgba(0, 245, 255, 0.5);
+            border-radius: 50%;
+            pointer-events: auto;
+        }
+
+        .joystick {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 245, 255, 0.8);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px rgba(0, 245, 255, 0.6);
+        }
+
+        .shoot-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 0, 0, 0.3);
+            border: 4px solid rgba(255, 0, 0, 0.7);
+            border-radius: 50%;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.5);
+        }
+
+        .shoot-btn:active {
+            background: rgba(255, 0, 0, 0.6);
+            transform: scale(0.95);
         }
 
         #end-screen {
@@ -217,7 +340,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.95);
             display: none;
             flex-direction: column;
             align-items: center;
@@ -226,163 +349,198 @@
         }
 
         #end-screen h2 {
-            font-size: clamp(2rem, 6vw, 3rem);
-            margin-bottom: 30px;
+            font-size: clamp(2.5rem, 8vw, 4rem);
+            margin-bottom: 40px;
+            text-transform: uppercase;
+            background: linear-gradient(45deg, #00f5ff, #ff00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .stats {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 30px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-            min-width: 300px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 40px;
+            border-radius: 20px;
+            margin-bottom: 40px;
+            min-width: 350px;
+            border: 3px solid rgba(0, 245, 255, 0.5);
         }
 
         .stat-line {
-            font-size: clamp(1.2rem, 4vw, 1.5rem);
-            margin: 15px 0;
+            font-size: clamp(1.3rem, 5vw, 1.8rem);
+            margin: 20px 0;
             display: flex;
             justify-content: space-between;
-            gap: 20px;
+            gap: 30px;
+            letter-spacing: 1px;
         }
 
         #restart-btn {
-            background: linear-gradient(135deg, #00d4ff, #0066ff);
+            background: linear-gradient(135deg, #00f5ff, #7b00ff);
             border: none;
             color: #fff;
-            padding: 15px 50px;
-            font-size: 1.3rem;
+            padding: 20px 60px;
+            font-size: 1.5rem;
             cursor: pointer;
             border-radius: 50px;
             transition: all 0.3s;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
 
         #restart-btn:hover {
-            transform: scale(1.05);
+            transform: scale(1.1);
         }
 
         @media (max-width: 768px) {
             .mode-grid {
                 grid-template-columns: 1fr;
             }
-
-            .hud-item {
-                padding: 10px 15px;
-            }
         }
     </style>
 </head>
 <body>
     <div id="menu">
-        <h1>🎯 AimLab 3D</h1>
+        <h1>AimLab</h1>
         <div class="mode-grid">
-            <button class="mode-btn" data-mode="static">Static 3D</button>
-            <button class="mode-btn" data-mode="flick">Flick 3D</button>
-            <button class="mode-btn" data-mode="tracking">Tracking 3D</button>
-            <button class="mode-btn" data-mode="sniper">Sniper 3D</button>
-            <button class="mode-btn" data-mode="speed">Speed Mode</button>
+            <button class="mode-btn" data-mode="gridshot">
+                Gridshot
+                <div class="mode-desc">Cibles statiques en grille</div>
+            </button>
+            <button class="mode-btn" data-mode="sixshot">
+                Sixshot
+                <div class="mode-desc">6 cibles rapides</div>
+            </button>
+            <button class="mode-btn" data-mode="tracking">
+                Tracking
+                <div class="mode-desc">Suivre la cible en mouvement</div>
+            </button>
+            <button class="mode-btn" data-mode="microshot">
+                Microshot
+                <div class="mode-desc">Cibles minuscules</div>
+            </button>
+            <button class="mode-btn" data-mode="spidershot">
+                Spidershot
+                <div class="mode-desc">Multiples cibles simultanées</div>
+            </button>
         </div>
         <div class="sensitivity-control">
-            <label>Sensibilité: <span id="sens-value">1.0</span></label>
-            <input type="range" id="sensitivity" min="0.1" max="3" step="0.1" value="1">
+            <label>Sensibilité: <span id="sens-value">1.5</span></label>
+            <input type="range" id="sensitivity" min="0.3" max="5" step="0.1" value="1.5">
         </div>
-        <button id="start-btn" disabled>Sélectionne un mode</button>
+        <button id="start-btn" disabled>Choisis un mode</button>
     </div>
 
     <div id="canvas-container"></div>
 
     <div id="hud">
         <div id="hud-top">
-            <div class="hud-item">Score: <span id="score">0</span></div>
-            <div class="hud-item">Temps: <span id="timer">60</span>s</div>
-            <div class="hud-item">Misses: <span id="misses">0</span></div>
+            <div class="hud-item">SCORE: <span id="score">0</span></div>
+            <div class="hud-item">TIME: <span id="timer">60</span></div>
+            <div class="hud-item">ACCURACY: <span id="accuracy">100%</span></div>
         </div>
     </div>
 
     <div id="crosshair"></div>
-    <div id="hitmarker"></div>
+    <div id="hitmarker">
+        <div class="hitmarker-line"></div>
+        <div class="hitmarker-line"></div>
+    </div>
+
+    <div id="mobile-controls">
+        <div class="joystick-container">
+            <div class="joystick" id="joystick"></div>
+        </div>
+        <div class="shoot-btn" id="shoot-btn">🎯</div>
+    </div>
 
     <div id="end-screen">
-        <h2>Terminé!</h2>
+        <h2>RÉSULTATS</h2>
         <div class="stats">
-            <div class="stat-line"><span>Score Final:</span> <span id="final-score">0</span></div>
-            <div class="stat-line"><span>Précision:</span> <span id="accuracy">0%</span></div>
-            <div class="stat-line"><span>Misses:</span> <span id="final-misses">0</span></div>
+            <div class="stat-line"><span>Score:</span> <span id="final-score">0</span></div>
+            <div class="stat-line"><span>Précision:</span> <span id="final-accuracy">0%</span></div>
+            <div class="stat-line"><span>Hits:</span> <span id="final-hits">0</span></div>
         </div>
         <button id="restart-btn">Rejouer</button>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // Configuration globale
+        const isMobile = 'ontouchstart' in window;
+
         const config = {
             mode: null,
-            sensitivity: 1.0,
+            sensitivity: 1.5,
             gameTime: 60,
             score: 0,
-            misses: 0,
             hits: 0,
+            totalShots: 0,
             isPlaying: false,
             targets: []
         };
 
-        // Modes de jeu
         const modes = {
-            static: {
+            gridshot: {
                 targetCount: 1,
+                targetSize: 1.2,
+                targetSpeed: 0,
+                spawnDelay: 0,
+                scorePerHit: 100,
+                spawnPattern: 'grid'
+            },
+            sixshot: {
+                targetCount: 6,
                 targetSize: 1,
                 targetSpeed: 0,
-                respawnDelay: 0,
-                flickTime: Infinity,
-                scoreMultiplier: 1,
-                fov: 75
-            },
-            flick: {
-                targetCount: 1,
-                targetSize: 0.8,
-                targetSpeed: 0,
-                respawnDelay: 0,
-                flickTime: 1000,
-                scoreMultiplier: 2,
-                fov: 75
+                spawnDelay: 0,
+                scorePerHit: 50,
+                spawnPattern: 'random'
             },
             tracking: {
                 targetCount: 1,
-                targetSize: 1,
-                targetSpeed: 2,
-                respawnDelay: 0,
-                flickTime: Infinity,
-                scoreMultiplier: 1.5,
-                fov: 75
+                targetSize: 1.3,
+                targetSpeed: 0.15,
+                spawnDelay: 0,
+                scorePerHit: 10,
+                spawnPattern: 'random',
+                continuous: true
             },
-            sniper: {
+            microshot: {
                 targetCount: 1,
-                targetSize: 0.4,
+                targetSize: 0.5,
                 targetSpeed: 0,
-                respawnDelay: 1500,
-                flickTime: Infinity,
-                scoreMultiplier: 2,
-                fov: 30
+                spawnDelay: 200,
+                scorePerHit: 200,
+                spawnPattern: 'random'
             },
-            speed: {
-                targetCount: 5,
-                targetSize: 0.7,
+            spidershot: {
+                targetCount: 8,
+                targetSize: 0.8,
                 targetSpeed: 0,
-                respawnDelay: 0,
-                flickTime: 2000,
-                scoreMultiplier: 1,
-                fov: 75
+                spawnDelay: 0,
+                scorePerHit: 75,
+                spawnPattern: 'circle'
             }
         };
 
-        // Three.js setup
         let scene, camera, renderer, raycaster;
+        let weapon, weaponGroup;
         let gameLoop, timerInterval;
         let startTime;
-        let touchStartX = 0, touchStartY = 0;
-        let isPointerLocked = false;
+        let keys = {};
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let velocity = new THREE.Vector3();
+        let direction = new THREE.Vector3();
+        let prevTime = performance.now();
 
-        // Éléments DOM
+        // Mobile controls
+        let joystickActive = false;
+        let joystickStart = { x: 0, y: 0 };
+        let joystickCurrent = { x: 0, y: 0 };
+        let touchLookStartX = 0, touchLookStartY = 0;
+
+        // DOM
         const menu = document.getElementById('menu');
         const canvasContainer = document.getElementById('canvas-container');
         const hud = document.getElementById('hud');
@@ -394,15 +552,17 @@
         const modeBtns = document.querySelectorAll('.mode-btn');
         const sensitivitySlider = document.getElementById('sensitivity');
         const sensValue = document.getElementById('sens-value');
+        const mobileControls = document.getElementById('mobile-controls');
+        const joystickElement = document.getElementById('joystick');
+        const shootBtn = document.getElementById('shoot-btn');
 
-        // Menu interactions
         modeBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 modeBtns.forEach(b => b.classList.remove('selected'));
                 btn.classList.add('selected');
                 config.mode = btn.dataset.mode;
                 startBtn.disabled = false;
-                startBtn.textContent = 'Commencer';
+                startBtn.textContent = 'DÉMARRER';
             });
         });
 
@@ -417,64 +577,142 @@
             menu.style.display = 'flex';
         });
 
-        // Initialisation Three.js
         function initThree() {
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x0a0a0a);
-            scene.fog = new THREE.Fog(0x0a0a0a, 10, 50);
+            scene.background = new THREE.Color(0x1a1a2e);
+            scene.fog = new THREE.Fog(0x1a1a2e, 30, 80);
 
-            const modeConfig = modes[config.mode];
-            camera = new THREE.PerspectiveCamera(modeConfig.fov, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 0, 0);
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 1.6, 0);
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
             canvasContainer.appendChild(renderer.domElement);
 
             raycaster = new THREE.Raycaster();
 
-            // Lumières
-            const ambientLight = new THREE.AmbientLight(0x404040, 2);
-            scene.add(ambientLight);
-
-            const pointLight1 = new THREE.PointLight(0x00ffff, 1, 100);
-            pointLight1.position.set(10, 10, 10);
-            scene.add(pointLight1);
-
-            const pointLight2 = new THREE.PointLight(0xff00ff, 1, 100);
-            pointLight2.position.set(-10, -10, 10);
-            scene.add(pointLight2);
-
-            // Grille de fond
-            const gridHelper = new THREE.GridHelper(50, 50, 0x00ffff, 0x003333);
-            gridHelper.position.y = -5;
-            scene.add(gridHelper);
-
-            // Création des cibles
+            // Environnement style AimLab
+            createEnvironment();
+            createWeapon();
             createTargets();
 
-            // Event listeners
             window.addEventListener('resize', onWindowResize);
+
+            if (isMobile) {
+                setupMobileControls();
+            } else {
+                setupPCControls();
+            }
+        }
+
+        function createEnvironment() {
+            // Sol avec grille
+            const floorGeometry = new THREE.PlaneGeometry(100, 100, 50, 50);
+            const floorMaterial = new THREE.MeshStandardMaterial({
+                color: 0x0a0a0a,
+                metalness: 0.8,
+                roughness: 0.4,
+                wireframe: false
+            });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // Grille néon
+            const gridHelper = new THREE.GridHelper(100, 50, 0x00f5ff, 0x003344);
+            gridHelper.position.y = 0.01;
+            scene.add(gridHelper);
+
+            // Murs transparents
+            const wallMaterial = new THREE.MeshStandardMaterial({
+                color: 0x00f5ff,
+                transparent: true,
+                opacity: 0.1,
+                side: THREE.DoubleSide
+            });
+
+            const wallGeometry = new THREE.PlaneGeometry(100, 20);
             
-            // Contrôles PC
-            renderer.domElement.addEventListener('click', () => {
-                if (!isPointerLocked && !('ontouchstart' in window)) {
-                    renderer.domElement.requestPointerLock();
-                } else if (isPointerLocked) {
-                    shoot();
-                }
+            const wall1 = new THREE.Mesh(wallGeometry, wallMaterial);
+            wall1.position.set(0, 10, -50);
+            scene.add(wall1);
+
+            const wall2 = new THREE.Mesh(wallGeometry, wallMaterial);
+            wall2.position.set(0, 10, 50);
+            wall2.rotation.y = Math.PI;
+            scene.add(wall2);
+
+            const wall3 = new THREE.Mesh(wallGeometry, wallMaterial);
+            wall3.position.set(-50, 10, 0);
+            wall3.rotation.y = Math.PI / 2;
+            scene.add(wall3);
+
+            const wall4 = new THREE.Mesh(wallGeometry, wallMaterial);
+            wall4.position.set(50, 10, 0);
+            wall4.rotation.y = -Math.PI / 2;
+            scene.add(wall4);
+
+            // Lumières
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+            scene.add(ambientLight);
+
+            const mainLight = new THREE.DirectionalLight(0xffffff, 1);
+            mainLight.position.set(10, 30, 10);
+            mainLight.castShadow = true;
+            scene.add(mainLight);
+
+            const neonLight1 = new THREE.PointLight(0x00f5ff, 2, 50);
+            neonLight1.position.set(-20, 5, -20);
+            scene.add(neonLight1);
+
+            const neonLight2 = new THREE.PointLight(0xff00ff, 2, 50);
+            neonLight2.position.set(20, 5, 20);
+            scene.add(neonLight2);
+        }
+
+        function createWeapon() {
+            weaponGroup = new THREE.Group();
+
+            // Corps de l'arme
+            const bodyGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.6);
+            const bodyMaterial = new THREE.MeshStandardMaterial({
+                color: 0x222222,
+                metalness: 0.9,
+                roughness: 0.2
             });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.position.set(0, 0, -0.3);
+            weaponGroup.add(body);
 
-            document.addEventListener('pointerlockchange', () => {
-                isPointerLocked = document.pointerLockElement === renderer.domElement;
+            // Canon
+            const barrelGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.4, 8);
+            const barrelMaterial = new THREE.MeshStandardMaterial({
+                color: 0x111111,
+                metalness: 1,
+                roughness: 0.1
             });
+            const barrel = new THREE.Mesh(barrelGeometry, barrelMaterial);
+            barrel.rotation.x = Math.PI / 2;
+            barrel.position.set(0, 0.03, -0.5);
+            weaponGroup.add(barrel);
 
-            document.addEventListener('mousemove', onMouseMove);
+            // Détails néon
+            const neonGeometry = new THREE.BoxGeometry(0.12, 0.02, 0.2);
+            const neonMaterial = new THREE.MeshStandardMaterial({
+                color: 0x00f5ff,
+                emissive: 0x00f5ff,
+                emissiveIntensity: 1
+            });
+            const neon = new THREE.Mesh(neonGeometry, neonMaterial);
+            neon.position.set(0, 0.06, -0.2);
+            weaponGroup.add(neon);
 
-            // Contrôles mobile
-            renderer.domElement.addEventListener('touchstart', onTouchStart, { passive: false });
-            renderer.domElement.addEventListener('touchmove', onTouchMove, { passive: false });
-            renderer.domElement.addEventListener('touchend', onTouchEnd, { passive: false });
+            // Position de l'arme
+            weaponGroup.position.set(0.3, -0.3, -0.5);
+            camera.add(weaponGroup);
+            scene.add(camera);
         }
 
         function createTargets() {
@@ -482,41 +720,65 @@
             config.targets = [];
 
             for (let i = 0; i < modeConfig.targetCount; i++) {
-                const geometry = Math.random() > 0.5 
-                    ? new THREE.SphereGeometry(modeConfig.targetSize, 32, 32)
-                    : new THREE.BoxGeometry(modeConfig.targetSize * 2, modeConfig.targetSize * 2, modeConfig.targetSize * 2);
-                
+                const geometry = new THREE.SphereGeometry(modeConfig.targetSize, 32, 32);
                 const material = new THREE.MeshStandardMaterial({
-                    color: 0xff0000,
-                    emissive: 0xff0000,
-                    emissiveIntensity: 0.5,
-                    metalness: 0.5,
-                    roughness: 0.3
+                    color: 0xff0044,
+                    emissive: 0xff0044,
+                    emissiveIntensity: 0.8,
+                    metalness: 0.3,
+                    roughness: 0.4
                 });
 
                 const target = new THREE.Mesh(geometry, material);
+                target.castShadow = true;
                 target.userData = {
                     velocity: new THREE.Vector3(),
-                    spawnTime: Date.now(),
-                    isVisible: true
+                    isActive: true,
+                    startTime: Date.now()
                 };
 
-                positionTarget(target);
+                positionTarget(target, i);
                 scene.add(target);
                 config.targets.push(target);
             }
         }
 
-        function positionTarget(target) {
-            const angle = Math.random() * Math.PI * 2;
-            const elevation = (Math.random() - 0.5) * Math.PI * 0.5;
-            const distance = 10 + Math.random() * 15;
-
-            target.position.x = Math.cos(angle) * Math.cos(elevation) * distance;
-            target.position.y = Math.sin(elevation) * distance;
-            target.position.z = Math.sin(angle) * Math.cos(elevation) * distance;
-
+        function positionTarget(target, index = 0) {
             const modeConfig = modes[config.mode];
+            
+            switch(modeConfig.spawnPattern) {
+                case 'grid':
+                    const gridSize = 3;
+                    const spacing = 8;
+                    const row = Math.floor(index / gridSize);
+                    const col = index % gridSize;
+                    target.position.set(
+                        (col - 1) * spacing,
+                        2 + row * spacing,
+                        -20
+                    );
+                    break;
+
+                case 'circle':
+                    const angle = (index / modeConfig.targetCount) * Math.PI * 2;
+                    const radius = 15;
+                    target.position.set(
+                        Math.cos(angle) * radius,
+                        3,
+                        Math.sin(angle) * radius - 10
+                    );
+                    break;
+
+                case 'random':
+                default:
+                    target.position.set(
+                        (Math.random() - 0.5) * 30,
+                        Math.random() * 10 + 2,
+                        (Math.random() - 0.5) * 30 - 10
+                    );
+                    break;
+            }
+
             if (modeConfig.targetSpeed > 0) {
                 target.userData.velocity.set(
                     (Math.random() - 0.5) * modeConfig.targetSpeed,
@@ -525,106 +787,230 @@
                 );
             }
 
-            target.userData.spawnTime = Date.now();
-            target.userData.isVisible = true;
+            target.userData.isActive = true;
+            target.userData.startTime = Date.now();
             target.visible = true;
             target.scale.set(0.1, 0.1, 0.1);
-            
-            // Animation d'apparition
-            animateTargetAppearance(target);
+            animateTargetSpawn(target);
         }
 
-        function animateTargetAppearance(target) {
-            const duration = 200;
-            const startTime = Date.now();
+        function animateTargetSpawn(target) {
+            const duration = 150;
+            const start = Date.now();
             
-            const animate = () => {
-                const elapsed = Date.now() - startTime;
+            const anim = () => {
+                const elapsed = Date.now() - start;
                 const progress = Math.min(elapsed / duration, 1);
                 const scale = progress;
                 
                 target.scale.set(scale, scale, scale);
                 
-                if (progress < 1 && target.userData.isVisible) {
-                    requestAnimationFrame(animate);
-                }
-            };
-            
-            animate();
-        }
-
-        function animateTargetDisappearance(target, callback) {
-            const duration = 200;
-            const startTime = Date.now();
-            const initialScale = target.scale.x;
-            
-            const animate = () => {
-                const elapsed = Date.now() - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                const scale = initialScale * (1 - progress);
-                
-                target.scale.set(scale, scale, scale);
-                
                 if (progress < 1) {
-                    requestAnimationFrame(animate);
-                } else {
-                    callback();
+                    requestAnimationFrame(anim);
                 }
             };
             
-            animate();
+            anim();
         }
 
-        function onMouseMove(e) {
-            if (!isPointerLocked || !config.isPlaying) return;
+        function setupPCControls() {
+            document.addEventListener('keydown', (e) => {
+                keys[e.code] = true;
+            });
 
-            const movementX = e.movementX || 0;
-            const movementY = e.movementY || 0;
+            document.addEventListener('keyup', (e) => {
+                keys[e.code] = false;
+            });
 
-            const rotationSpeed = 0.002 * config.sensitivity;
+            document.addEventListener('mousemove', (e) => {
+                if (!config.isPlaying) return;
 
-            camera.rotation.y -= movementX * rotationSpeed;
-            camera.rotation.x -= movementY * rotationSpeed;
-            camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
-        }
+                const movementX = e.movementX || 0;
+                const movementY = e.movementY || 0;
 
-        function onTouchStart(e) {
-            e.preventDefault();
-            if (e.touches.length === 1) {
-                touchStartX = e.touches[0].clientX;
-                touchStartY = e.touches[0].clientY;
-            }
-        }
+                const rotationSpeed = 0.002 * config.sensitivity;
 
-        function onTouchMove(e) {
-            e.preventDefault();
-            if (!config.isPlaying || e.touches.length !== 1) return;
+                camera.rotation.y -= movementX * rotationSpeed;
+                camera.rotation.x -= movementY * rotationSpeed;
+                camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
+            });
 
-            const touchX = e.touches[0].clientX;
-            const touchY = e.touches[0].clientY;
-
-            const deltaX = touchX - touchStartX;
-            const deltaY = touchY - touchStartY;
-
-            const rotationSpeed = 0.005 * config.sensitivity;
-
-            camera.rotation.y -= deltaX * rotationSpeed;
-            camera.rotation.x -= deltaY * rotationSpeed;
-            camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
-
-            touchStartX = touchX;
-            touchStartY = touchY;
-        }
-
-        function onTouchEnd(e) {
-            e.preventDefault();
-            if (config.isPlaying) {
+            renderer.domElement.addEventListener('click', (e) => {
+                if (!config.isPlaying) return;
                 shoot();
+            });
+
+            renderer.domElement.addEventListener('click', () => {
+                renderer.domElement.requestPointerLock();
+            });
+        }
+
+        function setupMobileControls() {
+            mobileControls.classList.add('active');
+
+            // Joystick pour se déplacer
+            const joystickContainer = document.querySelector('.joystick-container');
+            
+            joystickContainer.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                joystickActive = true;
+                const rect = joystickContainer.getBoundingClientRect();
+                joystickStart.x = rect.left + rect.width / 2;
+                joystickStart.y = rect.top + rect.height / 2;
+            });
+
+            document.addEventListener('touchmove', (e) => {
+                if (!joystickActive) return;
+                e.preventDefault();
+                
+                const touch = e.touches[0];
+                const deltaX = touch.clientX - joystickStart.x;
+                const deltaY = touch.clientY - joystickStart.y;
+                
+                const maxDistance = 35;
+                const distance = Math.min(maxDistance, Math.sqrt(deltaX * deltaX + deltaY * deltaY));
+                const angle = Math.atan2(deltaY, deltaX);
+                
+                joystickCurrent.x = Math.cos(angle) * distance;
+                joystickCurrent.y = Math.sin(angle) * distance;
+                
+                joystickElement.style.transform = `translate(calc
+                ```html
+(-50% + ${joystickCurrent.x}px), calc(-50% + ${joystickCurrent.y}px))`;
+            });
+
+            document.addEventListener('touchend', () => {
+                joystickActive = false;
+                joystickCurrent.x = 0;
+                joystickCurrent.y = 0;
+                joystickElement.style.transform = 'translate(-50%, -50%)';
+            });
+
+            // Zone de visée (moitié haute de l'écran)
+            let lookTouchId = null;
+            
+            renderer.domElement.addEventListener('touchstart', (e) => {
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+                    if (touch.clientY < window.innerHeight * 0.6 && lookTouchId === null) {
+                        lookTouchId = touch.identifier;
+                        touchLookStartX = touch.clientX;
+                        touchLookStartY = touch.clientY;
+                        break;
+                    }
+                }
+            });
+
+            renderer.domElement.addEventListener('touchmove', (e) => {
+                if (!config.isPlaying || lookTouchId === null) return;
+                
+                for (let i = 0; i < e.touches.length; i++) {
+                    const touch = e.touches[i];
+                    if (touch.identifier === lookTouchId) {
+                        e.preventDefault();
+                        
+                        const deltaX = touch.clientX - touchLookStartX;
+                        const deltaY = touch.clientY - touchLookStartY;
+
+                        const rotationSpeed = 0.003 * config.sensitivity;
+
+                        camera.rotation.y -= deltaX * rotationSpeed;
+                        camera.rotation.x -= deltaY * rotationSpeed;
+                        camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
+
+                        touchLookStartX = touch.clientX;
+                        touchLookStartY = touch.clientY;
+                        break;
+                    }
+                }
+            });
+
+            renderer.domElement.addEventListener('touchend', (e) => {
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    if (e.changedTouches[i].identifier === lookTouchId) {
+                        lookTouchId = null;
+                        break;
+                    }
+                }
+            });
+
+            // Bouton de tir
+            shootBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (config.isPlaying) {
+                    shoot();
+                }
+            });
+        }
+
+        function updateMovement(delta) {
+            moveForward = keys['KeyW'] || keys['ArrowUp'];
+            moveBackward = keys['KeyS'] || keys['ArrowDown'];
+            moveLeft = keys['KeyA'] || keys['ArrowLeft'];
+            moveRight = keys['KeyD'] || keys['ArrowRight'];
+
+            // Mobile joystick movement
+            if (isMobile && joystickActive) {
+                const joyX = joystickCurrent.x / 35;
+                const joyY = joystickCurrent.y / 35;
+                
+                moveForward = joyY < -0.3;
+                moveBackward = joyY > 0.3;
+                moveLeft = joyX < -0.3;
+                moveRight = joyX > 0.3;
             }
+
+            velocity.x -= velocity.x * 10.0 * delta;
+            velocity.z -= velocity.z * 10.0 * delta;
+
+            direction.z = Number(moveForward) - Number(moveBackward);
+            direction.x = Number(moveRight) - Number(moveLeft);
+            direction.normalize();
+
+            const speed = 20.0;
+
+            if (moveForward || moveBackward) velocity.z -= direction.z * speed * delta;
+            if (moveLeft || moveRight) velocity.x -= direction.x * speed * delta;
+
+            const forward = new THREE.Vector3(0, 0, -1);
+            forward.applyQuaternion(camera.quaternion);
+            forward.y = 0;
+            forward.normalize();
+
+            const right = new THREE.Vector3(1, 0, 0);
+            right.applyQuaternion(camera.quaternion);
+            right.y = 0;
+            right.normalize();
+
+            camera.position.addScaledVector(forward, velocity.z * delta);
+            camera.position.addScaledVector(right, velocity.x * delta);
+
+            // Limites de la zone
+            camera.position.x = Math.max(-45, Math.min(45, camera.position.x));
+            camera.position.z = Math.max(-45, Math.min(45, camera.position.z));
+            camera.position.y = 1.6;
         }
 
         function shoot() {
             if (!config.isPlaying) return;
+
+            config.totalShots++;
+
+            // Animation de recul de l'arme
+            weaponGroup.position.z = -0.45;
+            setTimeout(() => {
+                weaponGroup.position.z = -0.5;
+            }, 50);
+
+            // Flash du canon
+            const barrel = weaponGroup.children[1];
+            const originalEmissive = barrel.material.emissive.clone();
+            barrel.material.emissive.setHex(0xffff00);
+            barrel.material.emissiveIntensity = 2;
+            setTimeout(() => {
+                barrel.material.emissive.copy(originalEmissive);
+                barrel.material.emissiveIntensity = 0;
+            }, 50);
 
             const direction = new THREE.Vector3(0, 0, -1);
             direction.applyQuaternion(camera.quaternion);
@@ -634,92 +1020,120 @@
 
             if (intersects.length > 0) {
                 const target = intersects[0].object;
-                if (target.userData.isVisible) {
+                if (target.userData.isActive) {
                     hitTarget(target);
                 }
-            } else {
-                config.misses++;
-                updateHUD();
             }
+
+            updateAccuracy();
         }
 
         function hitTarget(target) {
             config.hits++;
             const modeConfig = modes[config.mode];
-            config.score += Math.round(100 * modeConfig.scoreMultiplier);
+            config.score += modeConfig.scorePerHit;
             updateHUD();
 
-            // Hitmarker
             showHitmarker();
 
             // Effet de hit
+            target.material.color.setHex(0x00ff00);
             target.material.emissive.setHex(0x00ff00);
+            target.material.emissiveIntensity = 1;
+
             setTimeout(() => {
-                if (target.material) {
-                    target.material.emissive.setHex(0xff0000);
-                }
+                target.material.color.setHex(0xff0044);
+                target.material.emissive.setHex(0xff0044);
+                target.material.emissiveIntensity = 0.8;
             }, 100);
 
-            target.userData.isVisible = false;
+            target.userData.isActive = false;
 
             // Respawn
-            animateTargetDisappearance(target, () => {
+            if (modeConfig.continuous) {
+                // Mode tracking : repositionnement immédiat
                 setTimeout(() => {
                     if (config.isPlaying) {
                         positionTarget(target);
                     }
-                }, modeConfig.respawnDelay);
-            });
+                }, 100);
+            } else {
+                // Autres modes : disparition puis respawn
+                target.scale.set(1, 1, 1);
+                const shrinkDuration = 150;
+                const shrinkStart = Date.now();
+                
+                const shrink = () => {
+                    const elapsed = Date.now() - shrinkStart;
+                    const progress = Math.min(elapsed / shrinkDuration, 1);
+                    const scale = 1 - progress;
+                    
+                    target.scale.set(scale, scale, scale);
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(shrink);
+                    } else {
+                        setTimeout(() => {
+                            if (config.isPlaying) {
+                                positionTarget(target);
+                            }
+                        }, modeConfig.spawnDelay);
+                    }
+                };
+                
+                shrink();
+            }
         }
 
         function showHitmarker() {
             hitmarker.style.display = 'block';
             setTimeout(() => {
                 hitmarker.style.display = 'none';
-            }, 100);
+            }, 80);
         }
 
         function updateTargets() {
             const modeConfig = modes[config.mode];
-            const currentTime = Date.now();
 
             config.targets.forEach(target => {
-                if (!target.userData.isVisible) return;
+                if (!target.userData.isActive && !modeConfig.continuous) return;
 
-                // Tracking mode
+                // Mouvement pour le mode tracking
                 if (modeConfig.targetSpeed > 0) {
-                    target.position.add(target.userData.velocity.clone().multiplyScalar(0.016));
+                    target.position.add(target.userData.velocity);
 
-                    // Rebond sur les limites
-                    const limit = 20;
-                    if (Math.abs(target.position.x) > limit) target.userData.velocity.x *= -1;
-                    if (Math.abs(target.position.y) > limit) target.userData.velocity.y *= -1;
-                    if (Math.abs(target.position.z) > limit) target.userData.velocity.z *= -1;
-                }
+                    // Rebonds sur les limites
+                    const limitX = 40;
+                    const limitY = 15;
+                    const limitZ = 40;
 
-                // Flick mode - disparition après délai
-                if (modeConfig.flickTime < Infinity) {
-                    if (currentTime - target.userData.spawnTime > modeConfig.flickTime) {
-                        config.misses++;
-                        updateHUD();
-                        target.userData.isVisible = false;
-                        animateTargetDisappearance(target, () => {
-                            if (config.isPlaying) {
-                                positionTarget(target);
-                            }
-                        });
+                    if (Math.abs(target.position.x) > limitX) {
+                        target.userData.velocity.x *= -1;
+                        target.position.x = Math.sign(target.position.x) * limitX;
+                    }
+                    if (target.position.y > limitY || target.position.y < 2) {
+                        target.userData.velocity.y *= -1;
+                        target.position.y = Math.max(2, Math.min(limitY, target.position.y));
+                    }
+                    if (Math.abs(target.position.z) > limitZ) {
+                        target.userData.velocity.z *= -1;
+                        target.position.z = Math.sign(target.position.z) * limitZ;
                     }
                 }
 
-                // Rotation
-                target.rotation.x += 0.01;
-                target.rotation.y += 0.01;
+                // Rotation permanente
+                target.rotation.x += 0.02;
+                target.rotation.y += 0.02;
             });
         }
 
         function updateHUD() {
             document.getElementById('score').textContent = config.score;
-            document.getElementById('misses').textContent = config.misses;
+        }
+
+        function updateAccuracy() {
+            const accuracy = config.totalShots > 0 ? Math.round((config.hits / config.totalShots) * 100) : 100;
+            document.getElementById('accuracy').textContent = accuracy + '%';
         }
 
         function updateTimer() {
@@ -736,8 +1150,16 @@
             if (!config.isPlaying) return;
 
             gameLoop = requestAnimationFrame(animate);
+
+            const time = performance.now();
+            const delta = (time - prevTime) / 1000;
+
+            updateMovement(delta);
             updateTargets();
+
             renderer.render(scene, camera);
+
+            prevTime = time;
         }
 
         function onWindowResize() {
@@ -749,27 +1171,26 @@
         function startGame() {
             if (!config.mode) return;
 
-            // Reset
             config.score = 0;
-            config.misses = 0;
             config.hits = 0;
+            config.totalShots = 0;
             config.isPlaying = true;
             startTime = Date.now();
+            prevTime = performance.now();
 
-            // UI
             menu.style.display = 'none';
             canvasContainer.style.display = 'block';
             hud.style.display = 'block';
             crosshair.style.display = 'block';
 
-            // Init Three.js
+            if (isMobile) {
+                mobileControls.style.display = 'block';
+            }
+
             initThree();
-
-            // Timer
             updateHUD();
+            updateAccuracy();
             timerInterval = setInterval(updateTimer, 1000);
-
-            // Start animation
             animate();
         }
 
@@ -782,7 +1203,6 @@
                 document.exitPointerLock();
             }
 
-            // Cleanup
             config.targets.forEach(target => {
                 scene.remove(target);
                 target.geometry.dispose();
@@ -790,23 +1210,23 @@
             });
             config.targets = [];
 
+            scene.remove(camera);
             renderer.dispose();
             canvasContainer.innerHTML = '';
 
-            // Stats
-            const totalShots = config.hits + config.misses;
-            const accuracy = totalShots > 0 ? Math.round((config.hits / totalShots) * 100) : 0;
+            const accuracy = config.totalShots > 0 ? Math.round((config.hits / config.totalShots) * 100) : 0;
 
             document.getElementById('final-score').textContent = config.score;
-            document.getElementById('accuracy').textContent = accuracy + '%';
-            document.getElementById('final-misses').textContent = config.misses;
+            document.getElementById('final-accuracy').textContent = accuracy + '%';
+            document.getElementById('final-hits').textContent = config.hits;
 
-            // UI
             hud.style.display = 'none';
             crosshair.style.display = 'none';
+            mobileControls.style.display = 'none';
             canvasContainer.style.display = 'none';
             endScreen.style.display = 'flex';
         }
     </script>
 </body>
 </html>
+```
