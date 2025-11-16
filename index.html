@@ -47,7 +47,7 @@ function init() {
     scene.add(light);
 
     createWeapon();
-    spawnTargets(5);
+    spawnInitialTargets(5);
     animate();
 
     if(isMobile) setupMobileControls();
@@ -69,18 +69,30 @@ function createWeapon() {
     scene.add(camera);
 }
 
-function spawnTargets(count) {
-    targets.forEach(t => scene.remove(t));
-    targets = [];
+function spawnInitialTargets(count){
     for(let i=0;i<count;i++){
         let t = new THREE.Mesh(new THREE.SphereGeometry(0.3,16,16), new THREE.MeshStandardMaterial({color:0xff0000}));
-        let x = (Math.random()-0.5)*4;
-        let y = 1 + Math.random()*2;
-        let z = -2 - Math.random()*2;
-        t.position.set(x,y,z);
+        placeTargetInFront(t);
         scene.add(t);
         targets.push(t);
     }
+}
+
+function placeTargetInFront(target){
+    // On place la cible devant la caméra, dans un arc limité
+    let angle = (Math.random() - 0.5) * Math.PI/3; // +/- 30 degrés
+    let distance = 2 + Math.random()*2; // 2 à 4 unités devant
+    let height = 1 + Math.random()*2; // hauteur aléatoire
+    let camDir = new THREE.Vector3();
+    camera.getWorldDirection(camDir);
+    camDir.y = 0;
+    camDir.normalize();
+
+    let side = new THREE.Vector3();
+    side.crossVectors(new THREE.Vector3(0,1,0), camDir).normalize();
+    let pos = camera.position.clone().add(camDir.multiplyScalar(distance)).add(side.multiplyScalar(Math.tan(angle)*distance));
+    pos.y = height;
+    target.position.copy(pos);
 }
 
 function shoot(){
@@ -88,11 +100,10 @@ function shoot(){
     let intersects = raycaster.intersectObjects(targets);
     if(intersects.length>0){
         let target = intersects[0].object;
-        scene.remove(target);
-        targets.splice(targets.indexOf(target),1);
         score++;
-        // respawn ailleurs
-        setTimeout(()=>{spawnTargets(1)},500);
+        // Respawn la cible ailleurs devant toi
+        placeTargetInFront(target);
+        target.material.color.set(0xff0000);
     }
 }
 
