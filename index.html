@@ -347,7 +347,10 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
+        console.log('Script chargé');
+        
         const isMobile = 'ontouchstart' in window;
+        console.log('Mobile:', isMobile);
 
         const config = {
             score: 0,
@@ -387,13 +390,21 @@
         const shootBtn = document.getElementById('shoot-btn');
         const minimap = document.getElementById('minimap');
 
-        startBtn.onclick = startGame;
-        restartBtn.onclick = function() {
+        console.log('Elements DOM trouvés');
+
+        startBtn.addEventListener('click', function() {
+            console.log('Bouton JOUER cliqué');
+            startGame();
+        });
+
+        restartBtn.addEventListener('click', function() {
+            console.log('Bouton Rejouer cliqué');
             endScreen.style.display = 'none';
             menu.style.display = 'flex';
-        };
+        });
 
         function initMinimap() {
+            console.log('Init minimap');
             minimapCanvas = document.getElementById('minimap-canvas');
             minimapCanvas.width = 200;
             minimapCanvas.height = 200;
@@ -452,35 +463,43 @@
         }
 
         function initThree() {
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x87ceeb);
-            scene.fog = new THREE.Fog(0x87ceeb, 50, 150);
+            console.log('Init Three.js');
+            try {
+                scene = new THREE.Scene();
+                scene.background = new THREE.Color(0x87ceeb);
+                scene.fog = new THREE.Fog(0x87ceeb, 50, 150);
 
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 1.7, 5);
+                camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                camera.position.set(0, 1.7, 5);
 
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = true;
-            canvasContainer.appendChild(renderer.domElement);
+                renderer = new THREE.WebGLRenderer({ antialias: true });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.shadowMap.enabled = true;
+                canvasContainer.appendChild(renderer.domElement);
 
-            raycaster = new THREE.Raycaster();
+                raycaster = new THREE.Raycaster();
 
-            createMap();
-            createWeapon();
-            createTargets();
-            initMinimap();
+                createMap();
+                createWeapon();
+                createTargets();
+                initMinimap();
 
-            window.addEventListener('resize', onWindowResize);
+                window.addEventListener('resize', onWindowResize);
 
-            if (isMobile) {
-                setupMobileControls();
-            } else {
-                setupPCControls();
+                if (isMobile) {
+                    setupMobileControls();
+                } else {
+                    setupPCControls();
+                }
+
+                console.log('Three.js initialisé avec succès');
+            } catch (error) {
+                console.error('Erreur lors de l\'initialisation de Three.js:', error);
             }
         }
 
         function createMap() {
+            console.log('Création de la map');
             const floorGeometry = new THREE.PlaneGeometry(200, 200);
             const floorMaterial = new THREE.MeshStandardMaterial({
                 color: 0x4a4a4a,
@@ -521,6 +540,7 @@
         }
 
         function createWeapon() {
+            console.log('Création de l\'arme');
             weaponGroup = new THREE.Group();
 
             const body = new THREE.Mesh(
@@ -555,6 +575,7 @@
         }
 
         function createTargets() {
+            console.log('Création des cibles');
             config.targets = [];
 
             for (let i = 0; i < 1; i++) {
@@ -612,6 +633,7 @@
         }
 
         function setupPCControls() {
+            console.log('Setup contrôles PC');
             document.addEventListener('keydown', function(e) {
                 keys[e.code] = true;
             });
@@ -637,6 +659,7 @@
         }
 
         function setupMobileControls() {
+            console.log('Setup contrôles mobile');
             mobileControls.style.display = 'block';
 
             const joystickContainer = document.querySelector('.joystick-container');
@@ -822,7 +845,8 @@
         }
 
         function updateTargets() {
-            config.targets.forEach(function(target) {
+            config.targets.forEach(function(target)```javascript
+ {
                 target.rotation.y += 0.01;
             });
         }
@@ -848,8 +872,7 @@
 
             gameLoop = requestAnimationFrame(animate);
 
-            const time = performance```javascript
-.now();
+            const time = performance.now();
             const delta = (time - prevTime) / 1000;
 
             updateMovement(delta);
@@ -868,27 +891,49 @@
         }
 
         function startGame() {
-            config.score = 0;
-            config.hits = 0;
-            config.totalShots = 0;
-            config.isPlaying = true;
-            startTime = Date.now();
-            prevTime = performance.now();
+            console.log('Démarrage du jeu...');
+            
+            try {
+                config.score = 0;
+                config.hits = 0;
+                config.totalShots = 0;
+                config.isPlaying = true;
+                startTime = Date.now();
+                prevTime = performance.now();
 
-            menu.style.display = 'none';
-            canvasContainer.style.display = 'block';
-            hud.style.display = 'block';
-            crosshair.style.display = 'block';
-            minimap.style.display = 'block';
+                console.log('Configuration réinitialisée');
 
-            initThree();
-            updateHUD();
-            updateAccuracy();
-            timerInterval = setInterval(updateTimer, 1000);
-            animate();
+                menu.style.display = 'none';
+                canvasContainer.style.display = 'block';
+                hud.style.display = 'block';
+                crosshair.style.display = 'block';
+                minimap.style.display = 'block';
+
+                console.log('UI mise à jour');
+
+                initThree();
+                
+                console.log('Three.js initialisé');
+
+                updateHUD();
+                updateAccuracy();
+                
+                timerInterval = setInterval(updateTimer, 1000);
+                
+                console.log('Timer démarré');
+
+                animate();
+                
+                console.log('Animation démarrée');
+                console.log('Jeu démarré avec succès!');
+            } catch (error) {
+                console.error('ERREUR lors du démarrage du jeu:', error);
+                alert('Erreur: ' + error.message);
+            }
         }
 
         function endGame() {
+            console.log('Fin du jeu');
             config.isPlaying = false;
             clearInterval(timerInterval);
             cancelAnimationFrame(gameLoop);
@@ -946,6 +991,14 @@
             mobileControls.style.display = 'none';
             canvasContainer.style.display = 'none';
             endScreen.style.display = 'flex';
+        }
+
+        // Vérifier que Three.js est chargé
+        if (typeof THREE === 'undefined') {
+            console.error('THREE.js n\'est pas chargé!');
+            alert('Erreur: THREE.js n\'est pas chargé. Veuillez recharger la page.');
+        } else {
+            console.log('THREE.js version:', THREE.REVISION);
         }
     </script>
 </body>
