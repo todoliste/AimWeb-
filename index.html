@@ -19,6 +19,7 @@
             justify-content: center;
             align-items: center;
             padding: 20px;
+            touch-action: none;
         }
 
         .container {
@@ -70,6 +71,7 @@
             display: none;
             text-align: center;
             margin-bottom: 20px;
+            position: relative;
         }
 
         .canvas-container.active {
@@ -80,7 +82,12 @@
             max-width: 100%;
             border-radius: 10px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            cursor: crosshair;
+            cursor: grab;
+            touch-action: none;
+        }
+
+        canvas:active {
+            cursor: grabbing;
         }
 
         .controls {
@@ -141,6 +148,28 @@
         input[type="range"] {
             width: 200px;
         }
+
+        .indicator {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            border: 3px solid rgba(102, 126, 234, 0.6);
+            border-radius: 50%;
+            pointer-events: none;
+            display: none;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
+        }
+
+        .indicator.active {
+            display: block;
+            animation: pulse 0.3s ease-out;
+        }
+
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -156,12 +185,13 @@
 
         <div class="canvas-container" id="canvasContainer">
             <canvas id="canvas"></canvas>
+            <div class="indicator" id="indicator"></div>
         </div>
 
         <div class="strength-control" id="strengthControl" style="display: none;">
             <label for="strength">Intensité:</label>
-            <input type="range" id="strength" min="10" max="100" value="50">
-            <span id="strengthValue">50</span>
+            <input type="range" id="strength" min="20" max="150" value="60">
+            <span id="strengthValue">60</span>
         </div>
 
         <div class="controls" id="controls">
@@ -171,7 +201,7 @@
         </div>
 
         <div class="info" id="info">
-            Cliquez sur l'image pour créer une distorsion !
+            Maintenez et glissez sur l'image pour l'étirer !
         </div>
     </div>
 
@@ -185,10 +215,13 @@
         const strengthControl = document.getElementById('strengthControl');
         const strengthSlider = document.getElementById('strength');
         const strengthValue = document.getElementById('strengthValue');
+        const indicator = document.getElementById('indicator');
 
         let originalImageData = null;
-        let currentImageData = null;
         let img = new Image();
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
 
         strengthSlider.addEventListener('input', (e) => {
             strengthValue.textContent = e.target.value;
@@ -256,40 +289,102 @@
             ctx.drawImage(img, 0, 0, width, height);
             
             originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            currentImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         }
 
-        canvas.addEventListener('click', (e) => {
+        // Événements souris
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseleave', stopDrawing);
+
+        // Événements tactiles
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent('mousedown', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent('mousemove', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            const mouseEvent = new MouseEvent('mouseup', {});
+            canvas.dispatchEvent(mouseEvent);
+        });
+
+        function startDrawing(e) {
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            lastX = (e.clientX - rect.left) * (canvas.width / rect.width);
+            lastY = (e.clientY - rect.top) * (canvas.height / rect.height);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+
             const rect = canvas.getBoundingClientRect();
             const x = (e.clientX - rect.left) * (canvas.width / rect.width);
             const y = (e.clientY - rect.top) * (canvas.height / rect.height);
-            
-            applyDistortion(x, y);
-        });
 
-        function applyDistortion(centerX, centerY) {
-            const strength = parseInt(strengthSlider.value);
-            const radius = 100;
+            // Afficher l'indicateur
+            indicator.style.left = e.clientX - rect.left + 'px';
+            indicator.style.top = e.clientY - rect.top + 'px';
+            indicator.classList.add('active');
+
+            applyStretch(lastX, lastY, x, y);
+
+            lastX = x;
+            lastY = y;
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+            indicator.classList.remove('active');
+            // Sauvegarder l'état actuel comme nouveau original
+            originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        }
+
+        function applyStretch(startX, startY, endX, endY) {
+            const strength = parseInt(strengthSlider.value) / 100;
+            const radius = 80;
             
+            const dx = endX - startX;
+            const dy = endY - startY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance < 1) return;
+
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const data = imageData.data;
             const originalData = originalImageData.data;
             
+            // Direction du mouvement
+            const dirX = dx / distance;
+            const dirY = dy / distance;
+
             for (let y = 0; y < canvas.height; y++) {
                 for (let x = 0; x < canvas.width; x++) {
-                    const dx = x - centerX;
-                    const dy = y - centerY;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const distToStart = Math.sqrt((x - startX) ** 2 + (y - startY) ** 2);
                     
-                    if (distance < radius) {
-                        const percent = distance / radius;
-                        const distortionFactor = Math.pow(1 - percent, 2) * (strength / 50);
+                    if (distToStart < radius) {
+                        const influence = 1 - (distToStart / radius);
+                        const stretchAmount = influence * distance * strength;
                         
-                        const angle = Math.atan2(dy, dx);
-                        const newDistance = distance * (1 - distortionFactor * 0.5);
-                        
-                        const sourceX = Math.round(centerX + Math.cos(angle) * newDistance);
-                        const sourceY = Math.round(centerY + Math.sin(angle) * newDistance);
+                        // Étirer dans la direction du mouvement
+                        const sourceX = Math.round(x - dirX * stretchAmount);
+                        const sourceY = Math.round(y - dirY * stretchAmount);
                         
                         if (sourceX >= 0 && sourceX < canvas.width && sourceY >= 0 && sourceY < canvas.height) {
                             const targetIdx = (y * canvas.width + x) * 4;
@@ -305,11 +400,10 @@
             }
             
             ctx.putImageData(imageData, 0, 0);
-            originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         }
 
         function resetImage() {
-            ctx.putImageData(currentImageData, 0, 0);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
             originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         }
 
