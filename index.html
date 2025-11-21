@@ -58,20 +58,18 @@
 const file = document.getElementById('file');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const scaleX = document.getElementById('scaleX');
-const scaleY = document.getElementById('scaleY');
-const sxVal = document.getElementById('sxVal');
-const syVal = document.getElementById('syVal');
-const applyBtn = document.getElementById('apply');
-const downloadBtn = document.getElementById('download');
-const resetBtn = document.getElementById('reset');
-const keepAspect = document.getElementById('keepAspect');
-
 let img = new Image();
 let imgLoaded = false;
-let naturalAspect = 1;
+let drag = false;
+let startX = 0;
+let scaleX = 1;
+let scaleY = 1;
 
-function clearCanvas(){ ctx.clearRect(0,0,canvas.width,canvas.height); ctx.fillStyle = '#071428'; ctx.fillRect(0,0,canvas.width,canvas.height); }
+function clearCanvas(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle = '#071428';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+}
 clearCanvas();
 
 file.addEventListener('change', e=>{
@@ -81,85 +79,51 @@ file.addEventListener('change', e=>{
   img = new Image();
   img.onload = ()=>{
     imgLoaded = true;
-    naturalAspect = img.width / img.height;
-    // Fit image to canvas initially
-    drawImage(1,1);
+    scaleX = 1;
+    scaleY = 1;
+    draw();
     URL.revokeObjectURL(url);
   }
   img.src = url;
 });
 
-scaleX.addEventListener('input', ()=>{
-  sxVal.textContent = Number(scaleX.value).toFixed(2);
-  if(keepAspect.checked){
-    scaleY.value = scaleX.value;
-    syVal.textContent = Number(scaleY.value).toFixed(2);
-  }
-  if(imgLoaded) drawImage(Number(scaleX.value), Number(scaleY.value));
+canvas.addEventListener('mousedown', e=>{
+  if(!imgLoaded) return;
+  drag = true;
+  startX = e.clientX;
 });
 
-scaleY.addEventListener('input', ()=>{
-  syVal.textContent = Number(scaleY.value).toFixed(2);
-  if(imgLoaded) drawImage(Number(scaleX.value), Number(scaleY.value));
+canvas.addEventListener('mouseup', ()=>{
+  drag = false;
 });
 
-applyBtn.addEventListener('click', ()=>{
-  if(!imgLoaded) return alert('Upload an image first');
-  drawImage(Number(scaleX.value), Number(scaleY.value));
+canvas.addEventListener('mouseleave', ()=>{
+  drag = false;
 });
 
-downloadBtn.addEventListener('click', ()=>{
-  if(!imgLoaded) return alert('Upload an image first');
-  const dataURL = canvas.toDataURL('image/png');
-  const a = document.createElement('a');
-  a.href = dataURL;
-  a.download = 'stretched-image.png';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+canvas.addEventListener('mousemove', e=>{
+  if(!drag || !imgLoaded) return;
+  let diff = (e.clientX - startX) / 200; // vitesse d'étirement
+  scaleX = Math.max(0.2, Math.min(3, 1 + diff));
+  draw();
 });
 
-resetBtn.addEventListener('click', ()=>{
-  scaleX.value = 1; scaleY.value = 1; sxVal.textContent='1.00'; syVal.textContent='1.00'; keepAspect.checked = true;
-  if(imgLoaded) drawImage(1,1);
-});
-
-function drawImage(sx, sy){
+function draw(){
   clearCanvas();
-  // center the image in the square canvas while applying scale
-  // compute scale to fit the image into canvas while preserving its natural aspect
-  const cw = canvas.width; const ch = canvas.height;
+  const cw = canvas.width;
+  const ch = canvas.height;
 
-  // base fit scale to fill the canvas (cover) depending on aspect
   let baseScale = Math.max(cw / img.width, ch / img.height);
-  // width and height after base scale
   const baseW = img.width * baseScale;
   const baseH = img.height * baseScale;
 
-  // apply user scales
-  const finalW = baseW * sx;
-  const finalH = baseH * sy;
+  const finalW = baseW * scaleX;
+  const finalH = baseH * scaleY;
 
-  // draw centered
   const dx = (cw - finalW) / 2;
   const dy = (ch - finalH) / 2;
 
-  // optional: add subtle vignette / overlay to look "trend" friendly
-  ctx.drawImage(img, 0,0,img.width,img.height, dx, dy, finalW, finalH);
-
-  // small overlay bar and caption area (editable by changing code)
-  ctx.fillStyle = 'rgba(0,0,0,0.18)';
-  ctx.fillRect(0, ch - 64, cw, 64);
-  ctx.fillStyle = 'rgba(255,255,255,0.9)';
-  ctx.font = '600 18px sans-serif';
-  ctx.fillText('Your music trend visual', 12, ch - 28);
-  ctx.font = '13px sans-serif';
-  ctx.fillText('Made with ImageStretch', 12, ch - 10);
+  ctx.drawImage(img, dx, dy, finalW, finalH);
 }
-
-// Initialize values display
-sxVal.textContent = Number(scaleX.value).toFixed(2);
-syVal.textContent = Number(scaleY.value).toFixed(2);
-
 </script></body>
 </html>
