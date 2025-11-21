@@ -1,581 +1,165 @@
-<!DOCTYPE html>
+<!doctype html>
+
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Éditeur de Distorsion</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0a0a0a;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            color: #fff;
-        }
-
-        .container {
-            background: #1a1a1a;
-            border: 1px solid #2a2a2a;
-            border-radius: 16px;
-            padding: 32px;
-            max-width: 1000px;
-            width: 100%;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-        }
-
-        header {
-            margin-bottom: 32px;
-        }
-
-        h1 {
-            font-size: 24px;
-            font-weight: 600;
-            color: #fff;
-            margin-bottom: 8px;
-        }
-
-        .subtitle {
-            color: #888;
-            font-size: 14px;
-        }
-
-        .upload-area {
-            border: 2px dashed #333;
-            border-radius: 12px;
-            padding: 60px 40px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            background: #141414;
-        }
-
-        .upload-area:hover {
-            border-color: #555;
-            background: #1a1a1a;
-        }
-
-        .upload-area.hidden {
-            display: none;
-        }
-
-        #fileInput {
-            display: none;
-        }
-
-        .upload-icon {
-            font-size: 48px;
-            margin-bottom: 16px;
-            opacity: 0.5;
-        }
-
-        .upload-text {
-            color: #aaa;
-            font-size: 16px;
-            font-weight: 500;
-            margin-bottom: 8px;
-        }
-
-        .upload-hint {
-            color: #666;
-            font-size: 13px;
-        }
-
-        .workspace {
-            display: none;
-        }
-
-        .workspace.active {
-            display: block;
-        }
-
-        .canvas-wrapper {
-            background: #0a0a0a;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 24px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 400px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        canvas {
-            max-width: 100%;
-            max-height: 600px;
-            border-radius: 8px;
-            cursor: grab;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
-            touch-action: none;
-        }
-
-        canvas:active {
-            cursor: grabbing;
-        }
-
-        .toolbar {
-            display: flex;
-            gap: 16px;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            padding: 20px;
-            background: #141414;
-            border-radius: 12px;
-            margin-bottom: 16px;
-        }
-
-        .tool-group {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-
-        .slider-control {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: #1a1a1a;
-            padding: 12px 16px;
-            border-radius: 8px;
-            border: 1px solid #2a2a2a;
-        }
-
-        .slider-control label {
-            color: #aaa;
-            font-size: 13px;
-            font-weight: 500;
-            min-width: 70px;
-        }
-
-        input[type="range"] {
-            width: 150px;
-            height: 4px;
-            background: #2a2a2a;
-            border-radius: 2px;
-            outline: none;
-            -webkit-appearance: none;
-        }
-
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 16px;
-            height: 16px;
-            background: #fff;
-            border-radius: 50%;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        input[type="range"]::-webkit-slider-thumb:hover {
-            transform: scale(1.2);
-        }
-
-        input[type="range"]::-moz-range-thumb {
-            width: 16px;
-            height: 16px;
-            background: #fff;
-            border-radius: 50%;
-            cursor: pointer;
-            border: none;
-        }
-
-        .value-display {
-            color: #fff;
-            font-size: 13px;
-            font-weight: 600;
-            min-width: 35px;
-            text-align: right;
-        }
-
-        .actions {
-            display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-            flex-wrap: wrap;
-        }
-
-        button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-primary {
-            background: #fff;
-            color: #0a0a0a;
-        }
-
-        .btn-primary:hover {
-            background: #e0e0e0;
-            transform: translateY(-1px);
-        }
-
-        .btn-secondary {
-            background: #2a2a2a;
-            color: #fff;
-        }
-
-        .btn-secondary:hover {
-            background: #333;
-        }
-
-        .btn-danger {
-            background: #dc2626;
-            color: #fff;
-        }
-
-        .btn-danger:hover {
-            background: #b91c1c;
-        }
-
-        .instruction {
-            text-align: center;
-            color: #666;
-            font-size: 13px;
-            padding: 16px;
-            background: #141414;
-            border-radius: 8px;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                padding: 20px;
-            }
-
-            .toolbar {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .tool-group {
-                width: 100%;
-            }
-
-            .slider-control {
-                flex: 1;
-            }
-
-            .actions {
-                width: 100%;
-            }
-
-            button {
-                flex: 1;
-            }
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Image Stretch - Music Trend</title>
+  <style>
+    :root{ --bg:#0f1724; --card:#0b1220; --accent:#06b6d4; color-scheme: dark; }
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial; background:linear-gradient(180deg,#071029 0%, #0b1220 100%); color:#e6eef8}
+    .wrap{max-width:1000px;margin:24px auto;padding:18px;background:rgba(255,255,255,0.03);border-radius:12px;box-shadow:0 6px 30px rgba(2,6,23,0.6)}
+    h1{margin:0 0 12px;font-size:20px}
+    .top{display:flex;gap:12px;align-items:center}
+    .controls{min-width:260px;padding:12px;background:rgba(255,255,255,0.02);border-radius:8px}
+    label{display:block;font-size:13px;margin:8px 0}
+    input[type=range]{width:100%}
+    canvas{background:#071428;border-radius:8px;display:block;max-width:100%;}
+    .row{display:flex;gap:12px}
+    .col{flex:1}
+    .small{font-size:13px;color:#bcd}
+    button{background:var(--accent);border:none;color:#042; padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600}
+    .muted{opacity:0.8}
+    .footer{margin-top:12px;font-size:13px;color:#a9bed0}
+  </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Éditeur de Distorsion</h1>
-            <p class="subtitle">Étirez et déformez vos images de manière interactive</p>
-        </header>
-        
-        <div class="upload-area" id="uploadArea">
-            <div class="upload-icon">📸</div>
-            <div class="upload-text">Glissez une image ou cliquez pour parcourir</div>
-            <div class="upload-hint">PNG, JPG jusqu'à 10MB</div>
-            <input type="file" id="fileInput" accept="image/*">
-        </div>
+  <div class="wrap">
+    <h1>Image Stretch — Trend Music (HTML)</h1>
+    <div class="top">
+      <div class="controls">
+        <label class="small">Choisir une image</label>
+        <input id="file" type="file" accept="image/*"><label>Scale X (horizontal stretch)</label>
+    <input id="scaleX" type="range" min="0.2" max="3" step="0.01" value="1">
+    <div class="small">Valeur: <span id="sxVal">1.00</span></div>
 
-        <div class="workspace" id="workspace">
-            <div class="toolbar">
-                <div class="tool-group">
-                    <div class="slider-control">
-                        <label>Intensité</label>
-                        <input type="range" id="intensity" min="5" max="50" value="20">
-                        <span class="value-display" id="intensityValue">20</span>
-                    </div>
-                    <div class="slider-control">
-                        <label>Rayon</label>
-                        <input type="range" id="radius" min="50" max="300" value="150">
-                        <span class="value-display" id="radiusValue">150</span>
-                    </div>
-                </div>
-            </div>
+    <label>Scale Y (vertical stretch)</label>
+    <input id="scaleY" type="range" min="0.2" max="3" step="0.01" value="1">
+    <div class="small">Valeur: <span id="syVal">1.00</span></div>
 
-            <div class="canvas-wrapper">
-                <canvas id="canvas"></canvas>
-            </div>
+    <label><input id="keepAspect" type="checkbox" checked> Keep aspect ratio when changing X</label>
 
-            <div class="instruction">
-                💡 Maintenez et glissez sur l'image pour créer un effet d'étirement fluide
-            </div>
-
-            <div class="actions">
-                <button class="btn-secondary" onclick="resetImage()">
-                    <span>↺</span> Réinitialiser
-                </button>
-                <button class="btn-danger" onclick="newImage()">
-                    <span>✕</span> Nouvelle image
-                </button>
-                <button class="btn-primary" onclick="downloadImage()">
-                    <span>⬇</span> Télécharger
-                </button>
-            </div>
-        </div>
+    <div style="margin-top:8px;display:flex;gap:8px">
+      <button id="apply">Apply</button>
+      <button id="download">Download PNG</button>
+      <button id="reset">Reset</button>
     </div>
 
-    <script>
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        const fileInput = document.getElementById('fileInput');
-        const uploadArea = document.getElementById('uploadArea');
-        const workspace = document.getElementById('workspace');
-        const intensitySlider = document.getElementById('intensity');
-        const radiusSlider = document.getElementById('radius');
-        const intensityValue = document.getElementById('intensityValue');
-        const radiusValue = document.getElementById('radiusValue');
+    <p class="muted small" style="margin-top:8px">Tip: Use Scale X > 1 to stretch horizontally (popular for music trend visuals). You can re-upload another image anytime.</p>
+  </div>
 
-        let img = new Image();
-        let meshData = null;
-        let isDrawing = false;
-        let gridSize = 15;
+  <div class="col">
+    <canvas id="canvas" width="720" height="720"></canvas>
+    <div class="footer">Preview — canvas sized to square 720×720 for easy use on social platforms. The final downloaded image keeps that size.</div>
+  </div>
+</div>
 
-        intensitySlider.addEventListener('input', (e) => {
-            intensityValue.textContent = e.target.value;
-        });
+  </div><script>
+const file = document.getElementById('file');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const scaleX = document.getElementById('scaleX');
+const scaleY = document.getElementById('scaleY');
+const sxVal = document.getElementById('sxVal');
+const syVal = document.getElementById('syVal');
+const applyBtn = document.getElementById('apply');
+const downloadBtn = document.getElementById('download');
+const resetBtn = document.getElementById('reset');
+const keepAspect = document.getElementById('keepAspect');
 
-        radiusSlider.addEventListener('input', (e) => {
-            radiusValue.textContent = e.target.value;
-        });
+let img = new Image();
+let imgLoaded = false;
+let naturalAspect = 1;
 
-        uploadArea.addEventListener('click', () => fileInput.click());
+function clearCanvas(){ ctx.clearRect(0,0,canvas.width,canvas.height); ctx.fillStyle = '#071428'; ctx.fillRect(0,0,canvas.width,canvas.height); }
+clearCanvas();
 
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.style.borderColor = '#555';
-        });
+file.addEventListener('change', e=>{
+  const f = e.target.files && e.target.files[0];
+  if(!f) return;
+  const url = URL.createObjectURL(f);
+  img = new Image();
+  img.onload = ()=>{
+    imgLoaded = true;
+    naturalAspect = img.width / img.height;
+    // Fit image to canvas initially
+    drawImage(1,1);
+    URL.revokeObjectURL(url);
+  }
+  img.src = url;
+});
 
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.style.borderColor = '#333';
-        });
+scaleX.addEventListener('input', ()=>{
+  sxVal.textContent = Number(scaleX.value).toFixed(2);
+  if(keepAspect.checked){
+    scaleY.value = scaleX.value;
+    syVal.textContent = Number(scaleY.value).toFixed(2);
+  }
+  if(imgLoaded) drawImage(Number(scaleX.value), Number(scaleY.value));
+});
 
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.style.borderColor = '#333';
-            const file = e.dataTransfer.files[0];
-            if (file && file.type.startsWith('image/')) {
-                loadImage(file);
-            }
-        });
+scaleY.addEventListener('input', ()=>{
+  syVal.textContent = Number(scaleY.value).toFixed(2);
+  if(imgLoaded) drawImage(Number(scaleX.value), Number(scaleY.value));
+});
 
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) loadImage(file);
-        });
+applyBtn.addEventListener('click', ()=>{
+  if(!imgLoaded) return alert('Upload an image first');
+  drawImage(Number(scaleX.value), Number(scaleY.value));
+});
 
-        function loadImage(file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                img.onload = () => {
-                    setupCanvas();
-                    uploadArea.classList.add('hidden');
-                    workspace.classList.add('active');
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
+downloadBtn.addEventListener('click', ()=>{
+  if(!imgLoaded) return alert('Upload an image first');
+  const dataURL = canvas.toDataURL('image/png');
+  const a = document.createElement('a');
+  a.href = dataURL;
+  a.download = 'stretched-image.png';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+});
 
-        function setupCanvas() {
-            const maxWidth = 900;
-            const maxHeight = 600;
-            let width = img.width;
-            let height = img.height;
+resetBtn.addEventListener('click', ()=>{
+  scaleX.value = 1; scaleY.value = 1; sxVal.textContent='1.00'; syVal.textContent='1.00'; keepAspect.checked = true;
+  if(imgLoaded) drawImage(1,1);
+});
 
-            if (width > maxWidth) {
-                height = (height * maxWidth) / width;
-                width = maxWidth;
-            }
-            if (height > maxHeight) {
-                width = (width * maxHeight) / height;
-                height = maxHeight;
-            }
+function drawImage(sx, sy){
+  clearCanvas();
+  // center the image in the square canvas while applying scale
+  // compute scale to fit the image into canvas while preserving its natural aspect
+  const cw = canvas.width; const ch = canvas.height;
 
-            canvas.width = width;
-            canvas.height = height;
-            
-            initMesh();
-            renderMesh();
-        }
+  // base fit scale to fill the canvas (cover) depending on aspect
+  let baseScale = Math.max(cw / img.width, ch / img.height);
+  // width and height after base scale
+  const baseW = img.width * baseScale;
+  const baseH = img.height * baseScale;
 
-        function initMesh() {
-            meshData = [];
-            const cols = gridSize;
-            const rows = Math.floor(gridSize * (canvas.height / canvas.width));
-            
-            for (let y = 0; y <= rows; y++) {
-                meshData[y] = [];
-                for (let x = 0; x <= cols; x++) {
-                    meshData[y][x] = {
-                        x: (x / cols) * canvas.width,
-                        y: (y / rows) * canvas.height,
-                        origX: (x / cols) * canvas.width,
-                        origY: (y / rows) * canvas.height
-                    };
-                }
-            }
-        }
+  // apply user scales
+  const finalW = baseW * sx;
+  const finalH = baseH * sy;
 
-        function renderMesh() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            const rows = meshData.length;
-            const cols = meshData[0].length;
-            
-            for (let y = 0; y < rows - 1; y++) {
-                for (let x = 0; x < cols - 1; x++) {
-                    const p1 = meshData[y][x];
-                    const p2 = meshData[y][x + 1];
-                    const p3 = meshData[y + 1][x + 1];
-                    const p4 = meshData[y + 1][x];
-                    
-                    ctx.save();
-                    ctx.beginPath();
-                    ctx.moveTo(p1.x, p1.y);
-                    ctx.lineTo(p2.x, p2.y);
-                    ctx.lineTo(p3.x, p3.y);
-                    ctx.lineTo(p4.x, p4.y);
-                    ctx.closePath();
-                    ctx.clip();
-                    
-                    const sx = p1.origX;
-                    const sy = p1.origY;
-                    const sw = (p2.origX - p1.origX);
-                    const sh = (p4.origY - p1.origY);
-                    
-                    if (sw > 0 && sh > 0) {
-                        ctx.drawImage(img, sx, sy, sw, sh, p1.x, p1.y, p2.x - p1.x, p4.y - p1.y);
-                    }
-                    
-                    ctx.restore();
-                }
-            }
-        }
+  // draw centered
+  const dx = (cw - finalW) / 2;
+  const dy = (ch - finalH) / 2;
 
-        canvas.addEventListener('mousedown', (e) => {
-            isDrawing = true;
-        });
+  // optional: add subtle vignette / overlay to look "trend" friendly
+  ctx.drawImage(img, 0,0,img.width,img.height, dx, dy, finalW, finalH);
 
-        canvas.addEventListener('mousemove', (e) => {
-            if (!isDrawing) return;
-            
-            const rect = canvas.getBoundingClientRect();
-            const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-            const y = (e.clientY - rect.top) * (canvas.height / rect.height);
-            const dx = e.movementX * (canvas.width / rect.width);
-            const dy = e.movementY * (canvas.height / rect.height);
-            
-            applyDistortion(x, y, dx, dy);
-        });
+  // small overlay bar and caption area (editable by changing code)
+  ctx.fillStyle = 'rgba(0,0,0,0.18)';
+  ctx.fillRect(0, ch - 64, cw, 64);
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  ctx.font = '600 18px sans-serif';
+  ctx.fillText('Your music trend visual', 12, ch - 28);
+  ctx.font = '13px sans-serif';
+  ctx.fillText('Made with ImageStretch', 12, ch - 10);
+}
 
-        canvas.addEventListener('mouseup', () => {
-            isDrawing = false;
-        });
+// Initialize values display
+sxVal.textContent = Number(scaleX.value).toFixed(2);
+syVal.textContent = Number(scaleY.value).toFixed(2);
 
-        canvas.addEventListener('mouseleave', () => {
-            isDrawing = false;
-        });
-
-        canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            isDrawing = true;
-        }, { passive: false });
-
-        let lastTouchX = 0;
-        let lastTouchY = 0;
-
-        canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            if (!isDrawing) return;
-            
-            const touch = e.touches[0];
-            const rect = canvas.getBoundingClientRect();
-            const x = (touch.clientX - rect.left) * (canvas.width / rect.width);
-            const y = (touch.clientY - rect.top) * (canvas.height / rect.height);
-            
-            const dx = x - lastTouchX;
-            const dy = y - lastTouchY;
-            
-            if (lastTouchX !== 0) {
-                applyDistortion(x, y, dx, dy);
-            }
-            
-            lastTouchX = x;
-            lastTouchY = y;
-        }, { passive: false });
-
-        canvas.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            isDrawing = false;
-            lastTouchX = 0;
-            lastTouchY = 0;
-        }, { passive: false });
-
-        function applyDistortion(mouseX, mouseY, dx, dy) {
-            const intensity = parseFloat(intensitySlider.value);
-            const radius = parseFloat(radiusSlider.value);
-            
-            const rows = meshData.length;
-            const cols = meshData[0].length;
-            
-            for (let y = 0; y < rows; y++) {
-                for (let x = 0; x < cols; x++) {
-                    const point = meshData[y][x];
-                    const distance = Math.sqrt(
-                        Math.pow(point.x - mouseX, 2) + 
-                        Math.pow(point.y - mouseY, 2)
-                    );
-                    
-                    if (distance < radius) {
-                        const influence = Math.pow(1 - (distance / radius), 2);
-                        point.x += dx * influence * intensity;
-                        point.y += dy * influence * intensity;
-                    }
-                }
-            }
-            
-            renderMesh();
-        }
-
-        function resetImage() {
-            initMesh();
-            renderMesh();
-        }
-
-        function downloadImage() {
-            const link = document.createElement('a');
-            link.download = 'image-distordue.png';
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-        }
-
-        function newImage() {
-            uploadArea.classList.remove('hidden');
-            workspace.classList.remove('active');
-            fileInput.value = '';
-        }
-    </script>
-</body>
+</script></body>
 </html>
