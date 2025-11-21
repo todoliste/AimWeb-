@@ -114,9 +114,13 @@
             max-width: 100%;
             max-height: 600px;
             border-radius: 8px;
-            cursor: move;
+            cursor: grab;
             box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
             touch-action: none;
+        }
+
+        canvas:active {
+            cursor: grabbing;
         }
 
         .toolbar {
@@ -252,20 +256,6 @@
             border-radius: 8px;
         }
 
-        .brush-indicator {
-            position: absolute;
-            border: 2px solid rgba(255, 255, 255, 0.4);
-            border-radius: 50%;
-            pointer-events: none;
-            display: none;
-            transform: translate(-50%, -50%);
-            transition: width 0.1s, height 0.1s;
-        }
-
-        .brush-indicator.active {
-            display: block;
-        }
-
         @media (max-width: 768px) {
             .container {
                 padding: 20px;
@@ -313,24 +303,23 @@
                 <div class="tool-group">
                     <div class="slider-control">
                         <label>Intensité</label>
-                        <input type="range" id="intensity" min="10" max="200" value="80">
-                        <span class="value-display" id="intensityValue">80</span>
+                        <input type="range" id="intensity" min="5" max="50" value="20">
+                        <span class="value-display" id="intensityValue">20</span>
                     </div>
                     <div class="slider-control">
                         <label>Rayon</label>
-                        <input type="range" id="radius" min="30" max="200" value="100">
-                        <span class="value-display" id="radiusValue">100</span>
+                        <input type="range" id="radius" min="50" max="300" value="150">
+                        <span class="value-display" id="radiusValue">150</span>
                     </div>
                 </div>
             </div>
 
             <div class="canvas-wrapper">
                 <canvas id="canvas"></canvas>
-                <div class="brush-indicator" id="brushIndicator"></div>
             </div>
 
             <div class="instruction">
-                💡 Maintenez et glissez sur l'image pour l'étirer dans n'importe quelle direction
+                💡 Maintenez et glissez sur l'image pour créer un effet d'étirement fluide
             </div>
 
             <div class="actions">
@@ -357,13 +346,11 @@
         const radiusSlider = document.getElementById('radius');
         const intensityValue = document.getElementById('intensityValue');
         const radiusValue = document.getElementById('radiusValue');
-        const brushIndicator = document.getElementById('brushIndicator');
 
         let img = new Image();
-        let originalImageData = null;
+        let meshData = null;
         let isDrawing = false;
-        let lastX = 0;
-        let lastY = 0;
+        let gridSize = 15;
 
         intensitySlider.addEventListener('input', (e) => {
             intensityValue.textContent = e.target.value;
@@ -371,7 +358,6 @@
 
         radiusSlider.addEventListener('input', (e) => {
             radiusValue.textContent = e.target.value;
-            updateBrushSize();
         });
 
         uploadArea.addEventListener('click', () => fileInput.click());
@@ -429,137 +415,153 @@
 
             canvas.width = width;
             canvas.height = height;
-            ctx.drawImage(img, 0, 0, width, height);
-            originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            
+            initMesh();
+            renderMesh();
         }
 
-        function updateBrushSize() {
-            const radius = parseInt(radiusSlider.value);
+        function initMesh() {
+            meshData = [];
+            const cols = gridSize;
+            const rows = Math.floor(gridSize * (canvas.height / canvas.width));
+            
+            for (let y = 0; y <= rows; y++) {
+                meshData[y] = [];
+                for (let x = 0; x <= cols; x++) {
+                    meshData[y][x] = {
+                        x: (x / cols) * canvas.width,
+                        y: (y / rows) * canvas.height,
+                        origX: (x / cols) * canvas.width,
+                        origY: (y / rows) * canvas.height
+                    };
+                }
+            }
+        }
+
+        function renderMesh() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const rows = meshData.length;
+            const cols = meshData[0].length;
+            
+            for (let y = 0; y < rows - 1; y++) {
+                for (let x = 0; x < cols - 1; x++) {
+                    const p1 = meshData[y][x];
+                    const p2 = meshData[y][x + 1];
+                    const p3 = meshData[y + 1][x + 1];
+                    const p4 = meshData[y + 1][x];
+                    
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(p1.x, p1.y);
+                    ctx.lineTo(p2.x, p2.y);
+                    ctx.lineTo(p3.x, p3.y);
+                    ctx.lineTo(p4.x, p4.y);
+                    ctx.closePath();
+                    ctx.clip();
+                    
+                    const sx = p1.origX;
+                    const sy = p1.origY;
+                    const sw = (p2.origX - p1.origX);
+                    const sh = (p4.origY - p1.origY);
+                    
+                    if (sw > 0 && sh > 0) {
+                        ctx.drawImage(img, sx, sy, sw, sh, p1.x, p1.y, p2.x - p1.x, p4.y - p1.y);
+                    }
+                    
+                    ctx.restore();
+                }
+            }
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+            
             const rect = canvas.getBoundingClientRect();
-            const scale = canvas.width / rect.width;
-            const displayRadius = radius / scale;
-            brushIndicator.style.width = displayRadius * 2 + 'px';
-            brushIndicator.style.height = displayRadius * 2 + 'px';
-        }
+            const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+            const dx = e.movementX * (canvas.width / rect.width);
+            const dy = e.movementY * (canvas.height / rect.height);
+            
+            applyDistortion(x, y, dx, dy);
+        });
 
-        canvas.addEventListener('mousedown', startDrawing);
-        canvas.addEventListener('mousemove', handleMove);
-        canvas.addEventListener('mouseup', stopDrawing);
-        canvas.addEventListener('mouseleave', stopDrawing);
+        canvas.addEventListener('mouseup', () => {
+            isDrawing = false;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            isDrawing = false;
+        });
 
         canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            const touch = e.touches[0];
-            const rect = canvas.getBoundingClientRect();
-            const mouseEvent = new MouseEvent('mousedown', {
-                clientX: touch.clientX,
-                clientY: touch.clientY
-            });
-            canvas.dispatchEvent(mouseEvent);
-        });
+            isDrawing = true;
+        }, { passive: false });
+
+        let lastTouchX = 0;
+        let lastTouchY = 0;
 
         canvas.addEventListener('touchmove', (e) => {
             e.preventDefault();
+            if (!isDrawing) return;
+            
             const touch = e.touches[0];
-            const mouseEvent = new MouseEvent('mousemove', {
-                clientX: touch.clientX,
-                clientY: touch.clientY
-            });
-            canvas.dispatchEvent(mouseEvent);
-        });
+            const rect = canvas.getBoundingClientRect();
+            const x = (touch.clientX - rect.left) * (canvas.width / rect.width);
+            const y = (touch.clientY - rect.top) * (canvas.height / rect.height);
+            
+            const dx = x - lastTouchX;
+            const dy = y - lastTouchY;
+            
+            if (lastTouchX !== 0) {
+                applyDistortion(x, y, dx, dy);
+            }
+            
+            lastTouchX = x;
+            lastTouchY = y;
+        }, { passive: false });
 
         canvas.addEventListener('touchend', (e) => {
             e.preventDefault();
-            stopDrawing();
-        });
+            isDrawing = false;
+            lastTouchX = 0;
+            lastTouchY = 0;
+        }, { passive: false });
 
-        function startDrawing(e) {
-            isDrawing = true;
-            const rect = canvas.getBoundingClientRect();
-            lastX = (e.clientX - rect.left) * (canvas.width / rect.width);
-            lastY = (e.clientY - rect.top) * (canvas.height / rect.height);
-            brushIndicator.classList.add('active');
-        }
-
-        function handleMove(e) {
-            const rect = canvas.getBoundingClientRect();
-            brushIndicator.style.left = (e.clientX - rect.left) + 'px';
-            brushIndicator.style.top = (e.clientY - rect.top) + 'px';
-
-            if (!isDrawing) return;
-
-            const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-            const y = (e.clientY - rect.top) * (canvas.height / rect.height);
-
-            applyDistortion(lastX, lastY, x, y);
-
-            lastX = x;
-            lastY = y;
-        }
-
-        function stopDrawing() {
-            if (isDrawing) {
-                isDrawing = false;
-                originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            }
-            brushIndicator.classList.remove('active');
-        }
-
-        function applyDistortion(x1, y1, x2, y2) {
-            const intensity = parseInt(intensitySlider.value) / 100;
-            const radius = parseInt(radiusSlider.value);
+        function applyDistortion(mouseX, mouseY, dx, dy) {
+            const intensity = parseFloat(intensitySlider.value);
+            const radius = parseFloat(radiusSlider.value);
             
-            const dx = x2 - x1;
-            const dy = y2 - y1;
-            const moveDistance = Math.sqrt(dx * dx + dy * dy);
+            const rows = meshData.length;
+            const cols = meshData[0].length;
             
-            if (moveDistance < 0.5) return;
-
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = canvas.width;
-            tempCanvas.height = canvas.height;
-            const tempCtx = tempCanvas.getContext('2d');
-            tempCtx.putImageData(originalImageData, 0, 0);
-
-            const imageData = ctx.createImageData(canvas.width, canvas.height);
-            const newData = imageData.data;
-            const srcData = originalImageData.data;
-
-            for (let y = 0; y < canvas.height; y++) {
-                for (let x = 0; x < canvas.width; x++) {
-                    const distToCenter = Math.sqrt((x - x1) ** 2 + (y - y1) ** 2);
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    const point = meshData[y][x];
+                    const distance = Math.sqrt(
+                        Math.pow(point.x - mouseX, 2) + 
+                        Math.pow(point.y - mouseY, 2)
+                    );
                     
-                    if (distToCenter < radius) {
-                        const influence = Math.pow(1 - (distToCenter / radius), 2);
-                        const displaceX = dx * influence * intensity;
-                        const displaceY = dy * influence * intensity;
-                        
-                        const srcX = Math.max(0, Math.min(canvas.width - 1, Math.round(x - displaceX)));
-                        const srcY = Math.max(0, Math.min(canvas.height - 1, Math.round(y - displaceY)));
-                        
-                        const targetIdx = (y * canvas.width + x) * 4;
-                        const sourceIdx = (srcY * canvas.width + srcX) * 4;
-                        
-                        newData[targetIdx] = srcData[sourceIdx];
-                        newData[targetIdx + 1] = srcData[sourceIdx + 1];
-                        newData[targetIdx + 2] = srcData[sourceIdx + 2];
-                        newData[targetIdx + 3] = srcData[sourceIdx + 3];
-                    } else {
-                        const idx = (y * canvas.width + x) * 4;
-                        newData[idx] = srcData[idx];
-                        newData[idx + 1] = srcData[idx + 1];
-                        newData[idx + 2] = srcData[idx + 2];
-                        newData[idx + 3] = srcData[idx + 3];
+                    if (distance < radius) {
+                        const influence = Math.pow(1 - (distance / radius), 2);
+                        point.x += dx * influence * intensity;
+                        point.y += dy * influence * intensity;
                     }
                 }
             }
             
-            ctx.putImageData(imageData, 0, 0);
+            renderMesh();
         }
 
         function resetImage() {
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            initMesh();
+            renderMesh();
         }
 
         function downloadImage() {
