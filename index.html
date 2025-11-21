@@ -26,14 +26,10 @@
 <body>
   <div class="wrap">
     <h1>Image Stretch — Trend Music (HTML)</h1>
-    <div class="top">
-      <div class="controls">
-        <label class="small">Choisir une image</label>
-        <input id="file" type="file" accept="image/*"><label>Scale X (horizontal stretch)</label>
-    <input id="scaleX" type="range" min="0.2" max="3" step="0.01" value="1">
-    <div class="small">Valeur: <span id="sxVal">1.00</span></div>
-
-    <label>Scale Y (vertical stretch)</label>
+    <div>
+  <input id="file" type="file" accept="image/*" style="margin-bottom:10px;">
+  <canvas id="canvas" width="720" height="720"></canvas>
+</div><label>Scale Y (vertical stretch)</label>
     <input id="scaleY" type="range" min="0.2" max="3" step="0.01" value="1">
     <div class="small">Valeur: <span id="syVal">1.00</span></div>
 
