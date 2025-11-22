@@ -1,140 +1,580 @@
-<!doctype html>
-
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Image Stretch - Music Trend</title>
-  <style>
-    :root{ --bg:#0f1724; --card:#0b1220; --accent:#06b6d4; color-scheme: dark; }
-    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial; background:linear-gradient(180deg,#071029 0%, #0b1220 100%); color:#e6eef8}
-    .wrap{max-width:1000px;margin:24px auto;padding:18px;background:rgba(255,255,255,0.03);border-radius:12px;box-shadow:0 6px 30px rgba(2,6,23,0.6)}
-    h1{margin:0 0 12px;font-size:20px}
-    .top{display:flex;gap:12px;align-items:center}
-    .controls{min-width:260px;padding:12px;background:rgba(255,255,255,0.02);border-radius:8px}
-    label{display:block;font-size:13px;margin:8px 0}
-    input[type=range]{width:100%}
-    canvas{background:#071428;border-radius:8px;display:block;max-width:100%;}
-    .row{display:flex;gap:12px}
-    .col{flex:1}
-    .small{font-size:13px;color:#bcd}
-    button{background:var(--accent);border:none;color:#042; padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600}
-    .muted{opacity:0.8}
-    .footer{margin-top:12px;font-size:13px;color:#a9bed0}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Éditeur de Distorsion</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: #fff;
+        }
+
+        .container {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 1000px;
+            width: 100%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        header {
+            margin-bottom: 32px;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 14px;
+        }
+
+        .upload-area {
+            border: 2px dashed #333;
+            border-radius: 12px;
+            padding: 60px 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #141414;
+        }
+
+        .upload-area:hover {
+            border-color: #555;
+            background: #1a1a1a;
+        }
+
+        .upload-area.hidden {
+            display: none;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .upload-text {
+            color: #aaa;
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .upload-hint {
+            color: #666;
+            font-size: 13px;
+        }
+
+        .workspace {
+            display: none;
+        }
+
+        .workspace.active {
+            display: block;
+        }
+
+        .canvas-wrapper {
+            background: #0a0a0a;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        canvas {
+            max-width: 100%;
+            max-height: 600px;
+            border-radius: 8px;
+            cursor: grab;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+            touch-action: none;
+        }
+
+        canvas:active {
+            cursor: grabbing;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            padding: 20px;
+            background: #141414;
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+
+        .tool-group {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .slider-control {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #1a1a1a;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid #2a2a2a;
+        }
+
+        .slider-control label {
+            color: #aaa;
+            font-size: 13px;
+            font-weight: 500;
+            min-width: 70px;
+        }
+
+        input[type="range"] {
+            width: 150px;
+            height: 4px;
+            background: #2a2a2a;
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        .value-display {
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            min-width: 35px;
+            text-align: right;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #fff;
+            color: #0a0a0a;
+        }
+
+        .btn-primary:hover {
+            background: #e0e0e0;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #2a2a2a;
+            color: #fff;
+        }
+
+        .btn-secondary:hover {
+            background: #333;
+        }
+
+        .btn-danger {
+            background: #dc2626;
+            color: #fff;
+        }
+
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+
+        .instruction {
+            text-align: center;
+            color: #666;
+            font-size: 13px;
+            padding: 16px;
+            background: #141414;
+            border-radius: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .tool-group {
+                width: 100%;
+            }
+
+            .slider-control {
+                flex: 1;
+            }
+
+            .actions {
+                width: 100%;
+            }
+
+            button {
+                flex: 1;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>Image Stretch — Trend Music (HTML)</h1>
-    <div>
-  <input id="file" type="file" accept="image/*" style="margin-bottom:10px;">
-  <canvas id="canvas" width="720" height="720"></canvas>
-</div><label>Scale Y (vertical stretch)</label>
-    <input id="scaleY" type="range" min="0.2" max="3" step="0.01" value="1">
-    <div class="small">Valeur: <span id="syVal">1.00</span></div>
+    <div class="container">
+        <header>
+            <h1>Éditeur de Distorsion</h1>
+            <p class="subtitle">Étirez et déformez vos images de manière interactive</p>
+        </header>
+        
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📸</div>
+            <div class="upload-text">Glissez une image ou cliquez pour parcourir</div>
+            <div class="upload-hint">PNG, JPG jusqu'à 10MB</div>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
 
-    <label><input id="keepAspect" type="checkbox" checked> Keep aspect ratio when changing X</label>
+        <div class="workspace" id="workspace">
+            <div class="toolbar">
+                <div class="tool-group">
+                    <div class="slider-control">
+                        <label>Force</label>
+                        <input type="range" id="strength" min="10" max="100" value="40">
+                        <span class="value-display" id="strengthValue">40</span>
+                    </div>
+                    <div class="slider-control">
+                        <label>Rayon</label>
+                        <input type="range" id="radius" min="50" max="300" value="120">
+                        <span class="value-display" id="radiusValue">120</span>
+                    </div>
+                </div>
+            </div>
 
-    <div style="margin-top:8px;display:flex;gap:8px">
-      <button id="apply">Apply</button>
-      <button id="download">Download PNG</button>
-      <button id="reset">Reset</button>
+            <div class="canvas-wrapper">
+                <canvas id="canvas"></canvas>
+            </div>
+
+            <div class="instruction">
+                💡 Maintenez et glissez pour étirer l'image de manière fluide vers l'extérieur
+            </div>
+
+            <div class="actions">
+                <button class="btn-secondary" onclick="resetImage()">
+                    <span>↺</span> Réinitialiser
+                </button>
+                <button class="btn-danger" onclick="newImage()">
+                    <span>✕</span> Nouvelle image
+                </button>
+                <button class="btn-primary" onclick="downloadImage()">
+                    <span>⬇</span> Télécharger
+                </button>
+            </div>
+        </div>
     </div>
 
-    <p class="muted small" style="margin-top:8px">Tip: Use Scale X > 1 to stretch horizontally (popular for music trend visuals). You can re-upload another image anytime.</p>
-  </div>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const fileInput = document.getElementById('fileInput');
+        const uploadArea = document.getElementById('uploadArea');
+        const workspace = document.getElementById('workspace');
+        const strengthSlider = document.getElementById('strength');
+        const radiusSlider = document.getElementById('radius');
+        const strengthValue = document.getElementById('strengthValue');
+        const radiusValue = document.getElementById('radiusValue');
 
-  <div class="col">
-    <canvas id="canvas" width="720" height="720"></canvas>
-    <div class="footer">Preview — canvas sized to square 720×720 for easy use on social platforms. The final downloaded image keeps that size.</div>
-  </div>
-</div>
+        let img = new Image();
+        let originalImageData = null;
+        let currentImageData = null;
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
 
-  </div><script>
-const file = document.getElementById('file');
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-let img = new Image();
-let imgLoaded = false;
+        strengthSlider.addEventListener('input', (e) => {
+            strengthValue.textContent = e.target.value;
+        });
 
-let isDragging = false;
-let startDist = 0;
-let scaleX = 1;
-let scaleY = 1;
+        radiusSlider.addEventListener('input', (e) => {
+            radiusValue.textContent = e.target.value;
+        });
 
-function clearCanvas(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.fillStyle = '#071428';
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-}
-clearCanvas();
+        uploadArea.addEventListener('click', () => fileInput.click());
 
-file.addEventListener('change', e=>{
-  const f = e.target.files && e.target.files[0];
-  if(!f) return;
-  const url = URL.createObjectURL(f);
-  img = new Image();
-  img.onload = ()=>{
-    imgLoaded = true;
-    scaleX = 1;
-    scaleY = 1;
-    draw();
-    URL.revokeObjectURL(url);
-  }
-  img.src = url;
-});
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#555';
+        });
 
-function getDistFromCenter(e){
-  let rect = canvas.getBoundingClientRect();
-  let x = e.clientX - rect.left;
-  let y = e.clientY - rect.top;
-  let cx = canvas.width / 2;
-  let cy = canvas.height / 2;
-  return Math.hypot(x - cx, y - cy);
-}
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.borderColor = '#333';
+        });
 
-canvas.addEventListener('mousedown', e=>{
-  if(!imgLoaded) return;
-  isDragging = true;
-  startDist = getDistFromCenter(e);
-});
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#333';
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                loadImage(file);
+            }
+        });
 
-canvas.addEventListener('mouseup', ()=>{
-  isDragging = false;
-});
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) loadImage(file);
+        });
 
-canvas.addEventListener('mouseleave', ()=>{
-  isDragging = false;
-});
+        function loadImage(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                img.onload = () => {
+                    setupCanvas();
+                    uploadArea.classList.add('hidden');
+                    workspace.classList.add('active');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
 
-canvas.addEventListener('mousemove', e=>{
-  if(!isDragging || !imgLoaded) return;
+        function setupCanvas() {
+            const maxWidth = 900;
+            const maxHeight = 600;
+            let width = img.width;
+            let height = img.height;
 
-  let dist = getDistFromCenter(e);
-  let factor = dist / startDist;
+            if (width > maxWidth) {
+                height = (height * maxWidth) / width;
+                width = maxWidth;
+            }
+            if (height > maxHeight) {
+                width = (width * maxHeight) / height;
+                height = maxHeight;
+            }
 
-  scaleX = Math.max(0.3, Math.min(3, factor));
-  scaleY = scaleX;
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            currentImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        }
 
-  draw();
-});
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            lastX = (e.clientX - rect.left) * (canvas.width / rect.width);
+            lastY = (e.clientY - rect.top) * (canvas.height / rect.height);
+        });
 
-function draw(){
-  clearCanvas();
-  const cw = canvas.width;
-  const ch = canvas.height;
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+            
+            const dx = x - lastX;
+            const dy = y - lastY;
+            
+            if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+                applyBulge(x, y, dx, dy);
+                lastX = x;
+                lastY = y;
+            }
+        });
 
-  let baseScale = Math.max(cw / img.width, ch / img.height);
-  const baseW = img.width * baseScale;
-  const baseH = img.height * baseScale;
+        canvas.addEventListener('mouseup', () => {
+            if (isDrawing) {
+                isDrawing = false;
+                currentImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            }
+        });
 
-  const finalW = baseW * scaleX;
-  const finalH = baseH * scaleY;
+        canvas.addEventListener('mouseleave', () => {
+            if (isDrawing) {
+                isDrawing = false;
+                currentImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            }
+        });
 
-  const dx = (cw - finalW) / 2;
-  const dy = (ch - finalH) / 2;
+        // Touch events
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isDrawing = true;
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            lastX = (touch.clientX - rect.left) * (canvas.width / rect.width);
+            lastY = (touch.clientY - rect.top) * (canvas.height / rect.height);
+        }, { passive: false });
 
-  ctx.drawImage(img, dx, dy, finalW, finalH);
-}
-</script></body>
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!isDrawing) return;
+            
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const x = (touch.clientX - rect.left) * (canvas.width / rect.width);
+            const y = (touch.clientY - rect.top) * (canvas.height / rect.height);
+            
+            const dx = x - lastX;
+            const dy = y - lastY;
+            
+            if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+                applyBulge(x, y, dx, dy);
+                lastX = x;
+                lastY = y;
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            if (isDrawing) {
+                isDrawing = false;
+                currentImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            }
+        }, { passive: false });
+
+        function applyBulge(centerX, centerY, dx, dy) {
+            const strength = parseFloat(strengthSlider.value) / 100;
+            const radius = parseFloat(radiusSlider.value);
+            
+            const outputData = ctx.createImageData(canvas.width, canvas.height);
+            const output = outputData.data;
+            const input = currentImageData.data;
+            
+            // Direction du mouvement
+            const moveLength = Math.sqrt(dx * dx + dy * dy);
+            if (moveLength < 0.1) return;
+            
+            const dirX = dx / moveLength;
+            const dirY = dy / moveLength;
+            
+            for (let y = 0; y < canvas.height; y++) {
+                for (let x = 0; x < canvas.width; x++) {
+                    // Distance du pixel au centre
+                    const distX = x - centerX;
+                    const distY = y - centerY;
+                    const distance = Math.sqrt(distX * distX + distY * distY);
+                    
+                    let sourceX = x;
+                    let sourceY = y;
+                    
+                    if (distance < radius && distance > 0) {
+                        // Calcul de l'influence (décroissance lisse)
+                        const influence = Math.pow(1 - (distance / radius), 2);
+                        
+                        // Projection du vecteur position sur la direction du mouvement
+                        const dotProduct = (distX * dirX + distY * dirY) / distance;
+                        
+                        // Si le pixel est dans la direction du mouvement, on l'étire
+                        if (dotProduct > 0) {
+                            const bulgeAmount = influence * strength * moveLength * 3;
+                            
+                            // Étirement radial dans la direction du mouvement
+                            sourceX = x - dirX * bulgeAmount * dotProduct;
+                            sourceY = y - dirY * bulgeAmount * dotProduct;
+                        }
+                    }
+                    
+                    // Clamp et récupération du pixel source
+                    sourceX = Math.max(0, Math.min(canvas.width - 1, Math.round(sourceX)));
+                    sourceY = Math.max(0, Math.min(canvas.height - 1, Math.round(sourceY)));
+                    
+                    const targetIdx = (y * canvas.width + x) * 4;
+                    const sourceIdx = (sourceY * canvas.width + sourceX) * 4;
+                    
+                    output[targetIdx] = input[sourceIdx];
+                    output[targetIdx + 1] = input[sourceIdx + 1];
+                    output[targetIdx + 2] = input[sourceIdx + 2];
+                    output[targetIdx + 3] = input[sourceIdx + 3];
+                }
+            }
+            
+            ctx.putImageData(outputData, 0, 0);
+        }
+
+        function resetImage() {
+            ctx.putImageData(originalImageData, 0, 0);
+            currentImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        }
+
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.download = 'image-distordue.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function newImage() {
+            uploadArea.classList.remove('hidden');
+            workspace.classList.remove('active');
+            fileInput.value = '';
+        }
+    </script>
+</body>
 </html>
