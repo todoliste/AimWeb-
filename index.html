@@ -3,169 +3,239 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mini CapCut Web</title>
+<title>Web Video Editor - CapCut Style</title>
 <style>
-    body {
-        margin: 0;
-        font-family: Arial, sans-serif;
-        background: #1e1e1e;
-        color: white;
-        display: flex;
-        flex-direction: column;
-        height: 100vh;
-    }
-    header {
-        background: #111;
-        padding: 10px;
-        text-align: center;
-        font-size: 1.5em;
-        font-weight: bold;
-    }
-    #editor {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        padding: 10px;
-        gap: 10px;
-    }
-    #videoContainer {
-        flex: 1;
-        background: black;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        position: relative;
-    }
-    video {
-        max-width: 100%;
-        max-height: 100%;
-        background: black;
-    }
-    #timeline {
-        height: 80px;
-        background: #222;
-        display: flex;
-        align-items: center;
-        padding: 5px;
-        overflow-x: auto;
-        gap: 5px;
-    }
-    .clip {
-        width: 100px;
-        height: 70px;
-        background: #444;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        border-radius: 5px;
-        user-select: none;
-    }
-    #controls {
-        display: flex;
-        gap: 10px;
-        justify-content: center;
-        padding: 10px 0;
-    }
-    button {
-        background: #333;
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 5px;
-        cursor: pointer;
-        font-size: 1em;
-    }
-    button:hover {
-        background: #555;
-    }
-    #textOverlay {
-        position: absolute;
-        color: white;
-        font-size: 2em;
-        pointer-events: none;
-    }
+/* Interface sombre */
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #121212;
+    color: #fff;
+}
+header {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    background-color: #1e1e1e;
+}
+button {
+    background-color: #333;
+    color: #fff;
+    border: none;
+    padding: 8px 12px;
+    margin: 5px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+button:hover { background-color: #555; }
+
+#editor {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 50px);
+}
+#preview {
+    flex: 2;
+    position: relative;
+    background-color: black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+#preview video {
+    max-width: 100%;
+    max-height: 100%;
+}
+#overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+.text-item, .sticker-item {
+    position: absolute;
+    cursor: move;
+    user-select: none;
+    pointer-events: all;
+}
+.text-item {
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px black;
+}
+.sticker-item img {
+    width: 100px;
+    height: 100px;
+}
+
+#timeline {
+    flex: 1;
+    background-color: #1b1b1b;
+    display: flex;
+    overflow-x: auto;
+    padding: 10px;
+    gap: 10px;
+}
+.clip {
+    background-color: #333;
+    padding: 5px;
+    border-radius: 5px;
+    cursor: pointer;
+    min-width: 100px;
+    text-align: center;
+    position: relative;
+}
+.clip video {
+    width: 100px;
+    height: 60px;
+    object-fit: cover;
+    display: block;
+}
+
+/* Drag handles pour redimensionner / déplacer */
+.draggable { position: absolute; cursor: move; }
+
+/* Barre de contrôle */
+#controls {
+    display: flex;
+    align-items: center;
+    padding: 5px;
+    background-color: #1e1e1e;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+input[type=range] { width: 100px; }
+
+/* Mobile responsive */
+@media(max-width:768px){
+    #editor { flex-direction: column; }
+    #timeline { overflow-x: scroll; }
+}
 </style>
 </head>
 <body>
 
-<header>Mini CapCut Web</header>
+<header>
+    <h2>Web Video Editor</h2>
+</header>
 
 <div id="editor">
-    <div id="videoContainer">
-        <video id="video" controls></video>
-        <div id="textOverlay"></div>
+    <div id="preview">
+        <video id="mainVideo" controls></video>
+        <div id="overlay"></div>
     </div>
 
-    <input type="file" id="videoInput" accept="video/*">
-
     <div id="controls">
-        <button id="playPause">▶️ Play/Pause</button>
-        <button id="addText">✏️ Ajouter Texte</button>
-        <button id="cutVideo">✂️ Couper Vidéo</button>
+        <input type="file" id="uploadVideo" accept="video/*" multiple>
+        <input type="file" id="uploadAudio" accept="audio/*" multiple>
+        <button onclick="addText()">Ajouter Texte</button>
+        <button onclick="addSticker()">Ajouter Sticker</button>
+        <label>Filtre:
+            <select id="filterSelect" onchange="applyFilter()">
+                <option value="">Aucun</option>
+                <option value="grayscale(100%)">Noir & Blanc</option>
+                <option value="sepia(100%)">Sepia</option>
+                <option value="brightness(150%)">Luminosité+</option>
+                <option value="contrast(150%)">Contraste+</option>
+            </select>
+        </label>
+        <button onclick="exportVideo()">Exporter MP4</button>
     </div>
 
     <div id="timeline"></div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.0/dist/ffmpeg.min.js"></script>
 <script>
-    const video = document.getElementById('video');
-    const videoInput = document.getElementById('videoInput');
-    const playPauseBtn = document.getElementById('playPause');
-    const addTextBtn = document.getElementById('addText');
-    const cutBtn = document.getElementById('cutVideo');
-    const timeline = document.getElementById('timeline');
-    const textOverlay = document.getElementById('textOverlay');
+// Gestion des vidéos
+const mainVideo = document.getElementById('mainVideo');
+const overlay = document.getElementById('overlay');
+const timeline = document.getElementById('timeline');
+let clips = [];
 
-    let clips = [];
-
-    videoInput.addEventListener('change', e => {
-        const file = e.target.files[0];
-        if (file) {
-            video.src = URL.createObjectURL(file);
-        }
-    });
-
-    playPauseBtn.addEventListener('click', () => {
-        if (video.paused) video.play();
-        else video.pause();
-    });
-
-    addTextBtn.addEventListener('click', () => {
-        const text = prompt('Entrez votre texte:');
-        if (text) {
-            textOverlay.textContent = text;
-            textOverlay.style.left = '50%';
-            textOverlay.style.top = '50%';
-            textOverlay.style.transform = 'translate(-50%, -50%)';
-        }
-    });
-
-    cutBtn.addEventListener('click', () => {
-        const start = prompt('Start time (sec):');
-        const end = prompt('End time (sec):');
-        if (!isNaN(start) && !isNaN(end) && start < end) {
-            const clip = {start: parseFloat(start), end: parseFloat(end)};
-            clips.push(clip);
+document.getElementById('uploadVideo').addEventListener('change', e=>{
+    Array.from(e.target.files).forEach(file => {
+        const url = URL.createObjectURL(file);
+        const video = document.createElement('video');
+        video.src = url;
+        video.muted = true;
+        video.onloadedmetadata = ()=>{
             const clipDiv = document.createElement('div');
             clipDiv.className = 'clip';
-            clipDiv.textContent = `${clip.start}s - ${clip.end}s`;
-            clipDiv.addEventListener('click', () => {
-                video.currentTime = clip.start;
-                video.play();
-                const checkInterval = setInterval(() => {
-                    if (video.currentTime >= clip.end) {
-                        video.pause();
-                        clearInterval(checkInterval);
-                    }
-                }, 100);
-            });
+            clipDiv.draggable = true;
+            clipDiv.innerHTML = `<video src="${url}"></video><br>${file.name}`;
+            clipDiv.addEventListener('click', ()=>{ mainVideo.src = url; });
             timeline.appendChild(clipDiv);
-        } else {
-            alert('Temps invalide');
-        }
+            clips.push({file, url});
+        };
     });
-</script>
+});
 
+// Texte
+function addText(){
+    const txt = prompt('Texte à ajouter:','Nouveau texte');
+    if(!txt) return;
+    const div = document.createElement('div');
+    div.className = 'text-item draggable';
+    div.innerText = txt;
+    div.style.top = '50px'; div.style.left = '50px';
+    makeDraggable(div);
+    overlay.appendChild(div);
+}
+
+// Sticker
+function addSticker(){
+    const url = prompt('URL du sticker PNG:');
+    if(!url) return;
+    const div = document.createElement('div');
+    div.className = 'sticker-item draggable';
+    div.style.top = '50px'; div.style.left = '50px';
+    const img = document.createElement('img');
+    img.src = url;
+    div.appendChild(img);
+    makeDraggable(div);
+    overlay.appendChild(div);
+}
+
+// Drag & Drop basique
+function makeDraggable(el){
+    let offsetX, offsetY, isDown = false;
+    el.addEventListener('mousedown', e=>{
+        isDown = true;
+        offsetX = e.offsetX;
+        offsetY = e.offsetY;
+    });
+    document.addEventListener('mouseup', ()=>{ isDown = false; });
+    document.addEventListener('mousemove', e=>{
+        if(!isDown) return;
+        el.style.left = e.pageX - offsetX + 'px';
+        el.style.top = e.pageY - offsetY + 'px';
+    });
+}
+
+// Filtres
+function applyFilter(){
+    mainVideo.style.filter = document.getElementById('filterSelect').value;
+}
+
+// Export via ffmpeg.wasm
+async function exportVideo(){
+    const { createFFmpeg, fetchFile } = FFmpeg;
+    const ffmpeg = createFFmpeg({ log: true });
+    await ffmpeg.load();
+    if(clips.length===0){ alert('Ajoute une vidéo!'); return; }
+    // Prends la première vidéo comme exemple
+    const clip = clips[0];
+    ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(clip.file));
+    await ffmpeg.run('-i','input.mp4','-c','copy','output.mp4');
+    const data = ffmpeg.FS('readFile','output.mp4');
+    const url = URL.createObjectURL(new Blob([data.buffer],{type:'video/mp4'}));
+    const a = document.createElement('a'); a.href = url; a.download='export.mp4'; a.click();
+    alert('Export terminé!');
+}
+</script>
 </body>
 </html>
