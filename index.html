@@ -3,206 +3,169 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PixLab Simple CapCut</title>
+<title>Mini CapCut Web</title>
 <style>
-body{margin:0;font-family:Arial,sans-serif;background:#111;color:white;overflow:hidden;}
-#editor{position:relative;width:100vw;height:85vh;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#111;}
-#image{position:absolute;transform-origin:center center;max-width:none;max-height:none;cursor:grab;}
-#crop{position:absolute;border:2px dashed #fff;box-sizing:border-box;touch-action:none;}
-.handle{width:20px;height:20px;background:white;border-radius:50%;position:absolute;transform:translate(-50%,-50%);}
-.handle.tl{top:0;left:0;cursor:nwse-resize;}
-.handle.tr{top:0;right:0;cursor:nesw-resize;}
-.handle.bl{bottom:0;left:0;cursor:nesw-resize;}
-.handle.br{bottom:0;right:0;cursor:nwse-resize;}
-.handle.t{top:0;left:50%;cursor:ns-resize;}
-.handle.b{bottom:0;left:50%;cursor:ns-resize;}
-.handle.l{left:0;top:50%;cursor:ew-resize;}
-.handle.r{right:0;top:50%;cursor:ew-resize;}
-#tools{position:fixed;bottom:0;left:0;right:0;height:18vh;background:rgba(50,50,50,0.95);display:flex;overflow-x:auto;white-space:nowrap;padding:5px;align-items:center;}
-.tool-group{display:flex;gap:10px;padding:0 5px;align-items:center;flex:none;}
-button,input[type=range],input[type=number]{background:#222;border:none;padding:6px 12px;color:white;border-radius:10px;flex:none;font-size:14px;}
-input[type=range]{width:80px;}
-input[type=number]{width:60px;}
-#file{position:fixed;top:10px;left:10px; z-index:20;}
-.textLayer{position:absolute;cursor:move;user-select:none;color:white;border:1px dashed #fff;padding:2px;}
-.label{font-size:12px;text-align:center;}
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #1e1e1e;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+    }
+    header {
+        background: #111;
+        padding: 10px;
+        text-align: center;
+        font-size: 1.5em;
+        font-weight: bold;
+    }
+    #editor {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 10px;
+        gap: 10px;
+    }
+    #videoContainer {
+        flex: 1;
+        background: black;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+    video {
+        max-width: 100%;
+        max-height: 100%;
+        background: black;
+    }
+    #timeline {
+        height: 80px;
+        background: #222;
+        display: flex;
+        align-items: center;
+        padding: 5px;
+        overflow-x: auto;
+        gap: 5px;
+    }
+    .clip {
+        width: 100px;
+        height: 70px;
+        background: #444;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border-radius: 5px;
+        user-select: none;
+    }
+    #controls {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        padding: 10px 0;
+    }
+    button {
+        background: #333;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1em;
+    }
+    button:hover {
+        background: #555;
+    }
+    #textOverlay {
+        position: absolute;
+        color: white;
+        font-size: 2em;
+        pointer-events: none;
+    }
 </style>
 </head>
 <body>
 
-<input type="file" id="file" accept="image/*">
+<header>Mini CapCut Web</header>
 
 <div id="editor">
-<img id="image">
-<div id="crop">
-  <div class="handle tl"></div><div class="handle tr"></div><div class="handle bl"></div><div class="handle br"></div>
-  <div class="handle t"></div><div class="handle b"></div><div class="handle l"></div><div class="handle r"></div>
-</div>
-</div>
+    <div id="videoContainer">
+        <video id="video" controls></video>
+        <div id="textOverlay"></div>
+    </div>
 
-<div id="tools">
-  <!-- Transform -->
-  <div class="tool-group">
-    <button id="rotateLeft">⟲</button>
-    <button id="rotateRight">⟳</button>
-    <button id="flipH">⇄</button>
-    <button id="flipV">⇅</button>
-  </div>
-  <!-- Filters -->
-  <div class="tool-group">
-    <input type="range" id="brightness" min="0" max="200" value="100">
-    <input type="range" id="contrast" min="0" max="200" value="100">
-    <input type="range" id="saturation" min="0" max="200" value="100">
-  </div>
-  <!-- Text -->
-  <div class="tool-group">
-    <button id="addText">T</button>
-  </div>
-  <!-- Crop size -->
-  <div class="tool-group">
-    W:<input type="number" id="cropWidth" value="200">
-    H:<input type="number" id="cropHeight" value="200">
-  </div>
-  <!-- Export -->
-  <div class="tool-group">
-    <button id="exportBtn">💾 Export</button>
-  </div>
+    <input type="file" id="videoInput" accept="video/*">
+
+    <div id="controls">
+        <button id="playPause">▶️ Play/Pause</button>
+        <button id="addText">✏️ Ajouter Texte</button>
+        <button id="cutVideo">✂️ Couper Vidéo</button>
+    </div>
+
+    <div id="timeline"></div>
 </div>
 
 <script>
-const img=document.getElementById("image");
-const crop=document.getElementById("crop");
-const handles=crop.querySelectorAll(".handle");
-const brightnessSlider=document.getElementById("brightness");
-const contrastSlider=document.getElementById("contrast");
-const saturationSlider=document.getElementById("saturation");
-const rotateLeftBtn=document.getElementById("rotateLeft");
-const rotateRightBtn=document.getElementById("rotateRight");
-const flipHBtn=document.getElementById("flipH");
-const flipVBtn=document.getElementById("flipV");
-const addTextBtn=document.getElementById("addText");
-const exportBtn=document.getElementById("exportBtn");
-const cropWidthInput=document.getElementById("cropWidth");
-const cropHeightInput=document.getElementById("cropHeight");
+    const video = document.getElementById('video');
+    const videoInput = document.getElementById('videoInput');
+    const playPauseBtn = document.getElementById('playPause');
+    const addTextBtn = document.getElementById('addText');
+    const cutBtn = document.getElementById('cutVideo');
+    const timeline = document.getElementById('timeline');
+    const textOverlay = document.getElementById('textOverlay');
 
-let imgX=0,imgY=0,scale=1,rotation=0,flipH=1,flipV=1;
-let dragging=false,startX=0,startY=0;
-let cropDragging=false,cropResizing=false,currentHandle=null;
-let start={x:0,y:0,w:0,h:0,pointerX:0,pointerY:0};
+    let clips = [];
 
-// ---------- LOAD IMAGE ----------
-document.getElementById("file").onchange=e=>{
-    const file=e.target.files[0];
-    img.src=URL.createObjectURL(file);
-    img.onload=()=>{
-        const editor=document.getElementById("editor");
-        const ew=editor.clientWidth, eh=editor.clientHeight;
-        const w=img.naturalWidth, h=img.naturalHeight;
-        let ratio=Math.min(ew/w, eh/h);
-        img.style.width=(w*ratio)+'px';
-        img.style.height=(h*ratio)+'px';
-        imgX=(ew-w*ratio)/2; imgY=(eh-h*ratio)/2;
-        img.style.left=imgX+'px'; img.style.top=imgY+'px';
-        scale=1; rotation=0; flipH=flipV=1;
-        crop.style.left=imgX+'px'; crop.style.top=imgY+'px'; crop.style.width=img.width+'px'; crop.style.height=img.height+'px';
-        cropWidthInput.value=crop.offsetWidth;
-        cropHeightInput.value=crop.offsetHeight;
-        img.style.filter='brightness(100%) contrast(100%) saturate(100%)';
-    }
-};
-
-// ---------- TRANSFORM ----------
-function updateTransform(){img.style.transform=`scale(${scale}) rotate(${rotation}deg) scaleX(${flipH}) scaleY(${flipV})`;}
-rotateLeftBtn.onclick=()=>{rotation-=90; updateTransform();}
-rotateRightBtn.onclick=()=>{rotation+=90; updateTransform();}
-flipHBtn.onclick=()=>{flipH*=-1; updateTransform();}
-flipVBtn.onclick=()=>{flipV*=-1; updateTransform();}
-
-// ---------- FILTERS ----------
-function updateFilters(){
-    img.style.filter=`brightness(${brightnessSlider.value}%) contrast(${contrastSlider.value}%) saturate(${saturationSlider.value}%)`;
-}
-[brightnessSlider,contrastSlider,saturationSlider].forEach(el=>{el.oninput=updateFilters;});
-
-// ---------- ADD TEXT ----------
-addTextBtn.onclick=()=>{
-    const text=prompt("Texte à ajouter"); if(!text) return;
-    const t=document.createElement("div"); t.className="textLayer"; t.innerText=text; t.style.left="60px"; t.style.top="60px"; t.style.fontSize="24px"; t.style.color="white"; document.getElementById("editor").appendChild(t);
-
-    // draggable texte
-    let dragging=false,startX=0,startY=0;
-    t.addEventListener("pointerdown",e=>{
-        dragging=true; startX=e.clientX-t.offsetLeft; startY=e.clientY-t.offsetTop;
-    });
-    document.addEventListener("pointermove",e=>{
-        if(dragging){t.style.left=(e.clientX-startX)+'px'; t.style.top=(e.clientY-startY)+'px';}
-    });
-    document.addEventListener("pointerup",()=>dragging=false);
-}
-
-// ---------- CROP INTERACTIVE ----------
-crop.addEventListener("pointerdown",e=>{
-    if(e.target.classList.contains("handle")){
-        cropResizing=true; currentHandle=e.target.classList[1];
-        start.x=crop.offsetLeft; start.y=crop.offsetTop; start.w=crop.offsetWidth; start.h=crop.offsetHeight;
-        start.pointerX=e.clientX; start.pointerY=e.clientY;
-        e.preventDefault();
-    }else{
-        cropDragging=true; start.pointerX=e.clientX; start.pointerY=e.clientY; start.x=crop.offsetLeft; start.y=crop.offsetTop;
-    }
-});
-document.addEventListener("pointermove",e=>{
-    if(cropDragging){
-        let dx=e.clientX-start.pointerX, dy=e.clientY-start.pointerY;
-        crop.style.left=start.x+dx+'px'; crop.style.top=start.y+dy+'px';
-        cropWidthInput.value=crop.offsetWidth;
-        cropHeightInput.value=crop.offsetHeight;
-    }
-    if(cropResizing && currentHandle){
-        let dx=e.clientX-start.pointerX, dy=e.clientY-start.pointerY;
-        let x=start.x,y=start.y,w=start.w,h=start.h;
-        switch(currentHandle){
-            case 'tl': crop.style.left=x+dx+'px'; crop.style.top=y+dy+'px'; crop.style.width=w-dx+'px'; crop.style.height=h-dy+'px'; break;
-            case 'tr': crop.style.top=y+dy+'px'; crop.style.width=w+dx+'px'; crop.style.height=h-dy+'px'; break;
-            case 'bl': crop.style.left=x+dx+'px'; crop.style.width=w-dx+'px'; crop.style.height=h+dy+'px'; break;
-            case 'br': crop.style.width=w+dx+'px'; crop.style.height=h+dy+'px'; break;
-            case 't': crop.style.top=y+dy+'px'; crop.style.height=h-dy+'px'; break;
-            case 'b': crop.style.height=h+dy+'px'; break;
-            case 'l': crop.style.left=x+dx+'px'; crop.style.width=w-dx+'px'; break;
-            case 'r': crop.style.width=w+dx+'px'; break;
+    videoInput.addEventListener('change', e => {
+        const file = e.target.files[0];
+        if (file) {
+            video.src = URL.createObjectURL(file);
         }
-        cropWidthInput.value=crop.offsetWidth;
-        cropHeightInput.value=crop.offsetHeight;
-    }
-});
-document.addEventListener("pointerup",()=>{cropDragging=false; cropResizing=false; currentHandle=null;});
+    });
 
-// ---------- CROP INPUTS ----------
-cropWidthInput.oninput=cropHeightInput.oninput=()=>{
-    crop.style.width=cropWidthInput.value+'px';
-    crop.style.height=cropHeightInput.value+'px';
-}
+    playPauseBtn.addEventListener('click', () => {
+        if (video.paused) video.play();
+        else video.pause();
+    });
 
-// ---------- EXPORT ----------
-exportBtn.onclick=()=>{
-    if(!img.src) return alert("Importe d'abord une image !");
-    const r=crop.getBoundingClientRect();
-    const editorRect=document.getElementById("editor").getBoundingClientRect();
-    const canvas=document.createElement("canvas");
-    canvas.width=r.width; canvas.height=r.height;
-    const ctx=canvas.getContext("2d");
-    const offsetX=r.left-editorRect.left;
-    const offsetY=r.top-editorRect.top;
-    ctx.save();
-    ctx.translate(canvas.width/2,canvas.height/2);
-    ctx.rotate(rotation*Math.PI/180);
-    ctx.scale(flipH,flipV);
-    ctx.filter=`brightness(${brightnessSlider.value}%) contrast(${contrastSlider.value}%) saturate(${saturationSlider.value}%)`;
-    ctx.drawImage(img,-img.width/2-offsetX,-img.height/2-offsetY,img.width*scale,img.height*scale);
-    ctx.restore();
-    const link=document.createElement("a");
-    link.href=canvas.toDataURL("image/png"); link.download="pixlab.png"; link.click();
-};
+    addTextBtn.addEventListener('click', () => {
+        const text = prompt('Entrez votre texte:');
+        if (text) {
+            textOverlay.textContent = text;
+            textOverlay.style.left = '50%';
+            textOverlay.style.top = '50%';
+            textOverlay.style.transform = 'translate(-50%, -50%)';
+        }
+    });
+
+    cutBtn.addEventListener('click', () => {
+        const start = prompt('Start time (sec):');
+        const end = prompt('End time (sec):');
+        if (!isNaN(start) && !isNaN(end) && start < end) {
+            const clip = {start: parseFloat(start), end: parseFloat(end)};
+            clips.push(clip);
+            const clipDiv = document.createElement('div');
+            clipDiv.className = 'clip';
+            clipDiv.textContent = `${clip.start}s - ${clip.end}s`;
+            clipDiv.addEventListener('click', () => {
+                video.currentTime = clip.start;
+                video.play();
+                const checkInterval = setInterval(() => {
+                    if (video.currentTime >= clip.end) {
+                        video.pause();
+                        clearInterval(checkInterval);
+                    }
+                }, 100);
+            });
+            timeline.appendChild(clipDiv);
+        } else {
+            alert('Temps invalide');
+        }
+    });
 </script>
+
 </body>
 </html>
