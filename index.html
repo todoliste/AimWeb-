@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PixLab Web</title>
+<title>PixLab Simple CapCut</title>
 <style>
 body{margin:0;font-family:Arial,sans-serif;background:#111;color:white;overflow:hidden;}
 #editor{position:relative;width:100vw;height:85vh;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#111;}
@@ -20,7 +20,7 @@ body{margin:0;font-family:Arial,sans-serif;background:#111;color:white;overflow:
 .handle.r{right:0;top:50%;cursor:ew-resize;}
 #tools{position:fixed;bottom:0;left:0;right:0;height:18vh;background:rgba(50,50,50,0.95);display:flex;overflow-x:auto;white-space:nowrap;padding:5px;align-items:center;}
 .tool-group{display:flex;gap:10px;padding:0 5px;align-items:center;flex:none;}
-button,input[type=range],select,input[type=number]{background:#222;border:none;padding:6px 12px;color:white;border-radius:10px;flex:none;font-size:14px;}
+button,input[type=range],input[type=number]{background:#222;border:none;padding:6px 12px;color:white;border-radius:10px;flex:none;font-size:14px;}
 input[type=range]{width:80px;}
 input[type=number]{width:60px;}
 #file{position:fixed;top:10px;left:10px; z-index:20;}
@@ -41,20 +41,31 @@ input[type=number]{width:60px;}
 </div>
 
 <div id="tools">
+  <!-- Transform -->
   <div class="tool-group">
     <button id="rotateLeft">⟲</button>
     <button id="rotateRight">⟳</button>
     <button id="flipH">⇄</button>
     <button id="flipV">⇅</button>
   </div>
+  <!-- Filters -->
   <div class="tool-group">
     <input type="range" id="brightness" min="0" max="200" value="100">
     <input type="range" id="contrast" min="0" max="200" value="100">
     <input type="range" id="saturation" min="0" max="200" value="100">
   </div>
+  <!-- Text -->
   <div class="tool-group">
     <button id="addText">T</button>
-    <button id="exportBtn">💾</button>
+  </div>
+  <!-- Crop size -->
+  <div class="tool-group">
+    W:<input type="number" id="cropWidth" value="200">
+    H:<input type="number" id="cropHeight" value="200">
+  </div>
+  <!-- Export -->
+  <div class="tool-group">
+    <button id="exportBtn">💾 Export</button>
   </div>
 </div>
 
@@ -71,6 +82,8 @@ const flipHBtn=document.getElementById("flipH");
 const flipVBtn=document.getElementById("flipV");
 const addTextBtn=document.getElementById("addText");
 const exportBtn=document.getElementById("exportBtn");
+const cropWidthInput=document.getElementById("cropWidth");
+const cropHeightInput=document.getElementById("cropHeight");
 
 let imgX=0,imgY=0,scale=1,rotation=0,flipH=1,flipV=1;
 let dragging=false,startX=0,startY=0;
@@ -92,6 +105,8 @@ document.getElementById("file").onchange=e=>{
         img.style.left=imgX+'px'; img.style.top=imgY+'px';
         scale=1; rotation=0; flipH=flipV=1;
         crop.style.left=imgX+'px'; crop.style.top=imgY+'px'; crop.style.width=img.width+'px'; crop.style.height=img.height+'px';
+        cropWidthInput.value=crop.offsetWidth;
+        cropHeightInput.value=crop.offsetHeight;
         img.style.filter='brightness(100%) contrast(100%) saturate(100%)';
     }
 };
@@ -140,6 +155,8 @@ document.addEventListener("pointermove",e=>{
     if(cropDragging){
         let dx=e.clientX-start.pointerX, dy=e.clientY-start.pointerY;
         crop.style.left=start.x+dx+'px'; crop.style.top=start.y+dy+'px';
+        cropWidthInput.value=crop.offsetWidth;
+        cropHeightInput.value=crop.offsetHeight;
     }
     if(cropResizing && currentHandle){
         let dx=e.clientX-start.pointerX, dy=e.clientY-start.pointerY;
@@ -154,9 +171,17 @@ document.addEventListener("pointermove",e=>{
             case 'l': crop.style.left=x+dx+'px'; crop.style.width=w-dx+'px'; break;
             case 'r': crop.style.width=w+dx+'px'; break;
         }
+        cropWidthInput.value=crop.offsetWidth;
+        cropHeightInput.value=crop.offsetHeight;
     }
 });
 document.addEventListener("pointerup",()=>{cropDragging=false; cropResizing=false; currentHandle=null;});
+
+// ---------- CROP INPUTS ----------
+cropWidthInput.oninput=cropHeightInput.oninput=()=>{
+    crop.style.width=cropWidthInput.value+'px';
+    crop.style.height=cropHeightInput.value+'px';
+}
 
 // ---------- EXPORT ----------
 exportBtn.onclick=()=>{
