@@ -3,22 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PixLab CapCut Web</title>
+<title>PixLab Web CapCut</title>
 <style>
-body {margin:0; font-family:Arial,sans-serif; background:#0f0f0f; color:white; overflow:hidden;}
-#editor {position:relative; width:100vw; height:80vh; background:#111; display:flex; align-items:center; justify-content:center; overflow:hidden;}
+body {margin:0; font-family:Arial,sans-serif; background:#111; color:white; overflow:hidden;}
+#editor {position:relative; width:100vw; height:85vh; display:flex; align-items:center; justify-content:center; overflow:hidden; background:#111;}
 #image {position:absolute; transform-origin:center center; max-width:none; max-height:none;}
-#crop {position:absolute; border:2px solid white; box-sizing:border-box; touch-action:none;}
-.handle {width:20px; height:20px; background:white; border-radius:50%; position:absolute; transform:translate(-50%,-50%);}
+#crop {position:absolute; border:2px dashed #fff; box-sizing:border-box; touch-action:none; cursor:move;}
+.handle {width:16px; height:16px; background:white; border-radius:50%; position:absolute; transform:translate(-50%,-50%);}
 .handle.tl {top:0; left:0;} .handle.tr {top:0; right:0;} .handle.bl {bottom:0; left:0;} .handle.br {bottom:0; right:0;}
-#tools {position:fixed; bottom:0; left:0; right:0; height:25vh; background:#111; display:flex; overflow-x:auto; white-space:nowrap; padding:5px; align-items:center;}
+#tools {position:fixed; bottom:0; left:0; right:0; height:15vh; background:rgba(50,50,50,0.9); display:flex; overflow-x:auto; white-space:nowrap; padding:5px; align-items:center;}
 .tool-group {display:flex; gap:8px; padding:0 5px; align-items:center; flex:none;}
 button,input[type=range],select{background:#222; border:none; padding:6px 12px; color:white; border-radius:10px; flex:none;}
 input[type=range]{width:80px;}
 #file{position:fixed;top:10px;left:10px; z-index:20;}
-.sticker, .textLayer{position:absolute; cursor:move; user-select:none;}
-.label{font-size:12px; text-align:center; margin-top:2px;}
+.sticker, .textLayer{position:absolute; cursor:move; user-select:none; color:white;}
 .tool{display:flex; flex-direction:column; align-items:center; gap:2px;}
+.label{font-size:12px; text-align:center;}
 </style>
 </head>
 <body>
@@ -32,7 +32,6 @@ input[type=range]{width:80px;}
 </div>
 
 <div id="tools">
-  <!-- Transform Group -->
   <div class="tool-group">
     <div class="tool"><button id="rotateLeft">⟲</button><div class="label">Rotate ⟲</div></div>
     <div class="tool"><button id="rotateRight">⟳</button><div class="label">Rotate ⟳</div></div>
@@ -40,7 +39,6 @@ input[type=range]{width:80px;}
     <div class="tool"><button id="flipV">⇅</button><div class="label">Flip V</div></div>
   </div>
 
-  <!-- Filter Group -->
   <div class="tool-group">
     <div class="tool"><input type="range" id="brightness" min="0" max="200" value="100"><div class="label">Brightness</div></div>
     <div class="tool"><input type="range" id="contrast" min="0" max="200" value="100"><div class="label">Contrast</div></div>
@@ -48,19 +46,16 @@ input[type=range]{width:80px;}
     <div class="tool"><select id="filter"><option value="none">Normal</option><option value="grayscale(100%)">B/W</option><option value="sepia(80%)">Sepia</option><option value="invert(100%)">Invert</option></select><div class="label">Filter</div></div>
   </div>
 
-  <!-- Crop Group -->
   <div class="tool-group">
     <div class="tool"><input type="range" id="radius" min="0" max="150" value="0"><div class="label">Border Radius</div></div>
     <div class="tool"><select id="cropShape"><option value="rect">Rect</option><option value="circle">Circle</option><option value="16:9">16:9</option><option value="4:3">4:3</option></select><div class="label">Crop</div></div>
   </div>
 
-  <!-- Text / Sticker Group -->
   <div class="tool-group">
     <div class="tool"><button id="addText">T</button><div class="label">Text</div></div>
     <div class="tool"><button id="addSticker">★</button><div class="label">Sticker</div></div>
   </div>
 
-  <!-- Export Group -->
   <div class="tool-group">
     <div class="tool"><button id="exportBtn">Export</button><div class="label">Save</div></div>
   </div>
@@ -176,5 +171,6 @@ exportBtn.onclick=()=>{
     link.href=canvas.toDataURL("image/png"); link.download="pixlab.png"; link.click();
 };
 </script>
+
 </body>
 </html>
