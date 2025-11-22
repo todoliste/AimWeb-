@@ -355,6 +355,11 @@
                         <span class="value-display" id="opacityValue">70%</span>
                     </div>
                     <div class="slider-control">
+                        <label>Coins ronds</label>
+                        <input type="range" id="cornerSlider" min="0" max="200" value="0">
+                        <span class="value-display" id="cornerValue">0px</span>
+                    </div>
+                    <div class="slider-control">
                         <label>Adoucir</label>
                         <input type="range" id="featherSlider" min="0" max="100" value="0">
                         <span class="value-display" id="featherValue">0px</span>
@@ -388,7 +393,7 @@
             </div>
 
             <div class="instruction">
-                💡 Déplacez les bordures pour recadrer • Ajustez l'adoucissement pour des bords progressifs au lieu de coupures nettes
+                💡 Ajustez "Coins ronds" pour des bords arrondis • "Adoucir" crée une transition douce et progressive
             </div>
 
             <div class="actions">
@@ -416,6 +421,8 @@
         const ctx = canvas.getContext('2d');
         const opacitySlider = document.getElementById('opacitySlider');
         const opacityValue = document.getElementById('opacityValue');
+        const cornerSlider = document.getElementById('cornerSlider');
+        const cornerValue = document.getElementById('cornerValue');
         const featherSlider = document.getElementById('featherSlider');
         const featherValue = document.getElementById('featherValue');
 
@@ -431,6 +438,12 @@
             opacityValue.textContent = value + '%';
             const opacity = value / 100;
             cropArea.style.boxShadow = `0 0 0 9999px rgba(0, 0, 0, ${opacity})`;
+        });
+
+        cornerSlider.addEventListener('input', (e) => {
+            const value = e.target.value;
+            cornerValue.textContent = value + 'px';
+            cropArea.style.borderRadius = value + 'px';
         });
 
         featherSlider.addEventListener('input', (e) => {
@@ -651,6 +664,7 @@
             const cropH = cropRect.height * scaleY;
             
             const feather = parseInt(featherSlider.value) * scaleX;
+            const cornerRadius = parseInt(cornerSlider.value) * scaleX;
             
             // Ajouter du padding pour le feather
             const padding = feather * 2;
@@ -668,33 +682,92 @@
                 canvas.height
             );
             
-            // Appliquer le feather si nécessaire
-            if (feather > 0) {
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const data = imageData.data;
-                
-                for (let y = 0; y < canvas.height; y++) {
-                    for (let x = 0; x < canvas.width; x++) {
-                        const idx = (y * canvas.width + x) * 4;
+            // Créer le masque avec coins ronds et feather
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            
+            for (let y = 0; y < canvas.height; y++) {
+                for (let x = 0; x < canvas.width; x++) {
+                    const idx = (y * canvas.width + x) * 4;
+                    
+                    // Position relative au rectangle de crop (sans padding)
+                    const relX = x - padding;
+                    const relY = y - padding;
+                    
+                    let alpha = 1;
+                    
+                    // Calculer la distance depuis les bords pour les coins ronds
+                    if (cornerRadius > 0) {
+                        // Déterminer si on est dans une zone de coin
+                        let cornerDist = Infinity;
                         
-                        // Distance depuis les bords
-                        const distLeft = x - padding;
-                        const distRight = (canvas.width - padding) - x;
-                        const distTop = y - padding;
-                        const distBottom = (canvas.height - padding) - y;
+                        // Coin top-left
+                        if (relX < cornerRadius && relY < cornerRadius) {
+                            const dx = cornerRadius - relX;
+                            const dy = cornerRadius - relY;
+                            cornerDist = Math.sqrt(dx * dx + dy * dy) - cornerRadius;
+                        }
+                        // Coin top-right
+                        else if (relX > cropW - cornerRadius && relY < cornerRadius) {
+                            const dx = relX - (cropW - cornerRadius);
+                            const dy = cornerRadius - relY;
+                            cornerDist = Math.sqrt(dx * dx + dy * dy) - cornerRadius;
+                        }
+                        // Coin bottom-left
+                        else if (relX < cornerRadius && relY > cropH - cornerRadius) {
+                            const dx = cornerRadius - relX;
+                            const dy = relY - (cropH - cornerRadius);
+                            cornerDist = Math.sqrt(dx * dx + dy * dy) - cornerRadius;
+                        }
+                        // Coin bottom-right
+                        else if (relX > cropW - cornerRadius && relY > cropH - cornerRadius) {
+                            const dx = relX - (cropW - cornerRadius);
+                            const dy = relY - (cropH - cornerRadius);
+                            cornerDist = Math.sqrt(dx * dx + dy * dy) - cornerRadius;
+                        }
                         
-                        const minDist = Math.min(distLeft, distRight, distTop, distBottom);
-                        
-                        // Appliquer le gradient alpha
-                        if (minDist < feather) {
-                            const alpha = Math.max(0, minDist / feather);
-                            data[idx + 3] *= alpha;
+                        // Si on est dans une zone de coin et à l'extérieur du rayon
+                        if (cornerDist > 0) {
+                            if (feather > 0 && cornerDist < feather) {
+                                alpha = Math.max(0, 1 - (cornerDist / feather));
+                            } else if (cornerDist >= feather) {
+                                alpha = 0;
+                            }
                         }
                     }
+                    
+                    // Appliquer le feather sur les bords droits (non-coins)
+                    if (alpha > 0 && feather > 0) {
+                        const distLeft = relX;
+                        const distRight = cropW - relX;
+                        const distTop = relY;
+                        const distBottom = cropH - relY;
+                        
+                        // Ignorer les zones de coins si cornerRadius > 0
+                        let inCornerZone = false;
+                        if (cornerRadius > 0) {
+                            if ((relX < cornerRadius && relY < cornerRadius) ||
+                                (relX > cropW - cornerRadius && relY < cornerRadius) ||
+                                (relX < cornerRadius && relY > cropH - cornerRadius) ||
+                                (relX > cropW - cornerRadius && relY > cropH - cornerRadius)) {
+                                inCornerZone = true;
+                            }
+                        }
+                        
+                        if (!inCornerZone) {
+                            const minDist = Math.min(distLeft, distRight, distTop, distBottom);
+                            if (minDist < feather) {
+                                alpha = Math.min(alpha, Math.max(0, minDist / feather));
+                            }
+                        }
+                    }
+                    
+                    // Appliquer l'alpha
+                    data[idx + 3] *= alpha;
                 }
-                
-                ctx.putImageData(imageData, 0, 0);
             }
+            
+            ctx.putImageData(imageData, 0, 0);
             
             const link = document.createElement('a');
             link.download = 'image-recadree.png';
