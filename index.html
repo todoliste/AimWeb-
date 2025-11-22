@@ -3,22 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PixLab Web CapCut</title>
+<title>PixLab CapCut Web</title>
 <style>
-body {margin:0; font-family:Arial,sans-serif; background:#111; color:white; overflow:hidden;}
-#editor {position:relative; width:100vw; height:85vh; display:flex; align-items:center; justify-content:center; overflow:hidden; background:#111;}
-#image {position:absolute; transform-origin:center center; max-width:none; max-height:none;}
-#crop {position:absolute; border:2px dashed #fff; box-sizing:border-box; touch-action:none; cursor:move;}
-.handle {width:16px; height:16px; background:white; border-radius:50%; position:absolute; transform:translate(-50%,-50%);}
-.handle.tl {top:0; left:0;} .handle.tr {top:0; right:0;} .handle.bl {bottom:0; left:0;} .handle.br {bottom:0; right:0;}
-#tools {position:fixed; bottom:0; left:0; right:0; height:15vh; background:rgba(50,50,50,0.9); display:flex; overflow-x:auto; white-space:nowrap; padding:5px; align-items:center;}
-.tool-group {display:flex; gap:8px; padding:0 5px; align-items:center; flex:none;}
-button,input[type=range],select{background:#222; border:none; padding:6px 12px; color:white; border-radius:10px; flex:none;}
+body{margin:0;font-family:Arial,sans-serif;background:#111;color:white;overflow:hidden;}
+#editor{position:relative;width:100vw;height:85vh;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#111;}
+#image{position:absolute;transform-origin:center center;max-width:none;max-height:none;cursor:grab;}
+#crop{position:absolute;border:2px dashed #fff;box-sizing:border-box;touch-action:none;cursor:move;}
+.handle{width:16px;height:16px;background:white;border-radius:50%;position:absolute;transform:translate(-50%,-50%);}
+.handle.tl{top:0;left:0;}
+.handle.tr{top:0;right:0;}
+.handle.bl{bottom:0;left:0;}
+.handle.br{bottom:0;right:0;}
+#tools{position:fixed;bottom:0;left:0;right:0;height:15vh;background:rgba(50,50,50,0.9);display:flex;overflow-x:auto;white-space:nowrap;padding:5px;align-items:center;}
+.tool-group{display:flex;gap:8px;padding:0 5px;align-items:center;flex:none;}
+button,input[type=range],select{background:#222;border:none;padding:6px 12px;color:white;border-radius:10px;flex:none;}
 input[type=range]{width:80px;}
 #file{position:fixed;top:10px;left:10px; z-index:20;}
-.sticker, .textLayer{position:absolute; cursor:move; user-select:none; color:white;}
-.tool{display:flex; flex-direction:column; align-items:center; gap:2px;}
-.label{font-size:12px; text-align:center;}
+.sticker, .textLayer{position:absolute;cursor:move;user-select:none;color:white;}
+.tool{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.label{font-size:12px;text-align:center;}
 </style>
 </head>
 <body>
@@ -32,6 +35,7 @@ input[type=range]{width:80px;}
 </div>
 
 <div id="tools">
+  <!-- Transform -->
   <div class="tool-group">
     <div class="tool"><button id="rotateLeft">⟲</button><div class="label">Rotate ⟲</div></div>
     <div class="tool"><button id="rotateRight">⟳</button><div class="label">Rotate ⟳</div></div>
@@ -39,23 +43,29 @@ input[type=range]{width:80px;}
     <div class="tool"><button id="flipV">⇅</button><div class="label">Flip V</div></div>
   </div>
 
+  <!-- Filters -->
   <div class="tool-group">
     <div class="tool"><input type="range" id="brightness" min="0" max="200" value="100"><div class="label">Brightness</div></div>
     <div class="tool"><input type="range" id="contrast" min="0" max="200" value="100"><div class="label">Contrast</div></div>
     <div class="tool"><input type="range" id="saturation" min="0" max="200" value="100"><div class="label">Saturation</div></div>
+    <div class="tool"><input type="range" id="blur" min="0" max="20" value="0"><div class="label">Blur</div></div>
+    <div class="tool"><input type="range" id="hue" min="0" max="360" value="0"><div class="label">Hue</div></div>
     <div class="tool"><select id="filter"><option value="none">Normal</option><option value="grayscale(100%)">B/W</option><option value="sepia(80%)">Sepia</option><option value="invert(100%)">Invert</option></select><div class="label">Filter</div></div>
   </div>
 
+  <!-- Crop -->
   <div class="tool-group">
     <div class="tool"><input type="range" id="radius" min="0" max="150" value="0"><div class="label">Border Radius</div></div>
-    <div class="tool"><select id="cropShape"><option value="rect">Rect</option><option value="circle">Circle</option><option value="16:9">16:9</option><option value="4:3">4:3</option></select><div class="label">Crop</div></div>
+    <div class="tool"><select id="cropShape"><option value="free">Libre</option><option value="rect">Carré</option><option value="16:9">16:9</option><option value="4:3">4:3</option></select><div class="label">Crop</div></div>
   </div>
 
+  <!-- Text / Sticker -->
   <div class="tool-group">
     <div class="tool"><button id="addText">T</button><div class="label">Text</div></div>
     <div class="tool"><button id="addSticker">★</button><div class="label">Sticker</div></div>
   </div>
 
+  <!-- Export -->
   <div class="tool-group">
     <div class="tool"><button id="exportBtn">Export</button><div class="label">Save</div></div>
   </div>
@@ -68,6 +78,8 @@ const radiusSlider=document.getElementById("radius");
 const brightnessSlider=document.getElementById("brightness");
 const contrastSlider=document.getElementById("contrast");
 const saturationSlider=document.getElementById("saturation");
+const blurSlider=document.getElementById("blur");
+const hueSlider=document.getElementById("hue");
 const filterSelect=document.getElementById("filter");
 const rotateLeftBtn=document.getElementById("rotateLeft");
 const rotateRightBtn=document.getElementById("rotateRight");
@@ -96,7 +108,7 @@ document.getElementById("file").onchange=e=>{
         img.style.left=imgX+'px'; img.style.top=imgY+'px';
         scale=1; rotation=0; flipH=flipV=1;
         crop.style.left=imgX+'px'; crop.style.top=imgY+'px'; crop.style.width=img.width+'px'; crop.style.height=img.height+'px'; crop.style.borderRadius='0px';
-        img.style.filter='brightness(100%) contrast(100%) saturate(100%)';
+        img.style.filter='brightness(100%) contrast(100%) saturate(100%) blur(0px) hue-rotate(0deg) none';
     }
 };
 
@@ -113,9 +125,10 @@ flipHBtn.onclick=()=>{flipH*=-1; updateTransform();};
 flipVBtn.onclick=()=>{flipV*=-1; updateTransform();};
 
 // ---------- FILTERS ----------
-[brightnessSlider,contrastSlider,saturationSlider,filterSelect].forEach(el=>{
-    el.oninput=()=>{img.style.filter=`brightness(${brightnessSlider.value}%) contrast(${contrastSlider.value}%) saturate(${saturationSlider.value}%) ${filterSelect.value}`;}
-});
+function updateFilters(){
+    img.style.filter=`brightness(${brightnessSlider.value}%) contrast(${contrastSlider.value}%) saturate(${saturationSlider.value}%) blur(${blurSlider.value}px) hue-rotate(${hueSlider.value}deg) ${filterSelect.value}`;
+}
+[brightnessSlider,contrastSlider,saturationSlider,blurSlider,hueSlider,filterSelect].forEach(el=>{el.oninput=updateFilters;});
 
 // ---------- BORDER RADIUS ----------
 radiusSlider.oninput=()=>crop.style.borderRadius=radiusSlider.value+'px';
@@ -137,6 +150,7 @@ cropShapeSelect.onchange=()=>{
     else if(val==='rect'){crop.style.borderRadius='0%';}
     else if(val==='16:9'){crop.style.height=(crop.offsetWidth*9/16)+'px'; crop.style.borderRadius='0';}
     else if(val==='4:3'){crop.style.height=(crop.offsetWidth*3/4)+'px'; crop.style.borderRadius='0';}
+    else if(val==='free'){crop.style.height=img.height+'px'; crop.style.width=img.width+'px'; crop.style.borderRadius='0';}
 };
 
 // ---------- EXPORT ----------
@@ -163,7 +177,7 @@ exportBtn.onclick=()=>{
     ctx.translate(canvas.width/2,canvas.height/2);
     ctx.rotate(rotation*Math.PI/180);
     ctx.scale(flipH,flipV);
-    ctx.filter=`brightness(${brightnessSlider.value}%) contrast(${contrastSlider.value}%) saturate(${saturationSlider.value}%) ${filterSelect.value}`;
+    ctx.filter=`brightness(${brightnessSlider.value}%) contrast(${contrastSlider.value}%) saturate(${saturationSlider.value}%) blur(${blurSlider.value}px) hue-rotate(${hueSlider.value}deg) ${filterSelect.value}`;
     ctx.drawImage(img,-img.width/2-offsetX,-img.height/2-offsetY,img.width*scale,img.height*scale);
     ctx.restore();
 
