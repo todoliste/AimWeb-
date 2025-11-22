@@ -1,463 +1,228 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>PixLab Mobile — Éditeur</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PixLab - Mobile Editor</title>
 <style>
-  :root{--bg:#050506;--panel:#0b0b0d;--muted:#8a8a8a;--accent:#00d4ff;}
-  html,body{height:100%;margin:0;background:var(--bg);color:#fff;font-family:Inter,system-ui,Segoe UI,Roboto,Arial; -webkit-tap-highlight-color: transparent;}
-  .app{display:flex;flex-direction:column;height:100vh;gap:0}
-  header{height:56px;display:flex;align-items:center;gap:12px;padding:8px 14px;background:#000;border-bottom:1px solid #0f0f10}
-  .logo{font-weight:800;letter-spacing:0.6px}
-  .main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;box-sizing:border-box}
-  /* workspace full screen area */
-  .viewer{position:relative;width:100%;max-width:100%;height:calc(100vh - 56px - 96px);background:linear-gradient(180deg,#0b0b0d,#090909);border-radius:12px;overflow:hidden;touch-action:none}
-  #cropContainer{position:absolute;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center}
-  .canvas-frame{position:relative;background:#0b0b0b;border-radius:10px;overflow:hidden;max-width:98%;max-height:98%;width:100%;height:100%;display:flex;align-items:center;justify-content:center}
-  /* image sits absolutely at top-left of frame to simplify math */
-  #imageDisplay{position:absolute;left:0;top:0;will-change:transform;width:auto;height:auto;user-select:none;-webkit-user-drag:none}
-  #layers{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
-  /* crop area */
-  #cropArea{position:absolute;border:2px dashed rgba(255,255,255,0.12);box-shadow:0 0 0 9999px rgba(0,0,0,0.45);border-radius:10px;pointer-events:auto;touch-action:none}
-  .handle{position:absolute;width:14px;height:14px;background:#fff;border-radius:50%;border:2px solid #0a0a0a;box-sizing:border-box}
-  .tl{top:-10px;left:-10px;cursor:nwse-resize}.tr{top:-10px;right:-10px;cursor:nesw-resize}
-  .bl{bottom:-10px;left:-10px;cursor:nesw-resize}.br{bottom:-10px;right:-10px;cursor:nwse-resize}
-  /* bottom toolbar mobile */
-  .toolbar{height:88px;background:linear-gradient(180deg,#050506,#030304);border-top:1px solid #0f0f10;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;gap:8px;box-sizing:border-box}
-  .left-controls{display:flex;gap:8px;align-items:center}
-  .btn{background:var(--panel);border:1px solid #151515;padding:10px 12px;border-radius:10px;color:#fff;font-weight:700}
-  .accent{background:var(--accent);color:#001;border:none}
-  .grow{flex:1;display:flex;gap:8px;align-items:center;justify-content:center}
-  .small{font-size:13px;padding:8px}
-  input[type=file]{display:none}
-  .pill{background:#0d0d0d;padding:6px 10px;border-radius:10px;border:1px solid #131313;color:var(--muted);font-size:13px}
-  @media(min-width:900px){ .viewer{height:66vh} .toolbar{height:76px} }
+    body {
+        margin: 0;
+        background: #0f0f0f;
+        font-family: Arial;
+        overflow: hidden;
+        color: white;
+    }
+
+    #editor {
+        position: fixed;
+        inset: 0;
+        background: #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        touch-action: none;
+    }
+
+    #image {
+        position: absolute;
+        max-width: none;
+        max-height: none;
+        transform-origin: center center;
+    }
+
+    /* Zone de crop */
+    #crop {
+        position: absolute;
+        border: 2px solid white;
+        border-radius: 0px;
+        box-sizing: border-box;
+        touch-action: none;
+    }
+
+    .handle {
+        width: 22px;
+        height: 22px;
+        background: white;
+        border-radius: 50%;
+        position: absolute;
+        transform: translate(-50%, -50%);
+        touch-action: none;
+    }
+
+    .handle.tl { top: 0; left: 0; }
+    .handle.tr { top: 0; right: 0; }
+    .handle.bl { bottom: 0; left: 0; }
+    .handle.br { bottom: 0; right: 0; }
+
+    /* Barre outils */
+    #tools {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: #111;
+        padding: 10px;
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        border-top: 1px solid #333;
+    }
+
+    button, input[type=range] {
+        background: #222;
+        border: none;
+        padding: 10px 15px;
+        color: white;
+        border-radius: 10px;
+        font-size: 14px;
+    }
 </style>
 </head>
 <body>
-<div class="app">
-  <header>
-    <div class="logo">📸 PixLab</div>
-    <div style="margin-left:auto" class="pill">Mobile — Full</div>
-  </header>
 
-  <div class="main">
-    <div class="viewer" id="viewer">
-      <div id="cropContainer" class="canvas-frame">
-        <!-- image displayed at top-left of this frame: we set left/top and width/height in JS -->
-        <img id="imageDisplay" alt="image"/>
-        <div id="layers"></div>
+<input type="file" id="file" accept="image/*" style="position:fixed;top:10px;left:10px;z-index:20;" />
 
-        <!-- crop area (initial size set by JS) -->
-        <div id="cropArea">
-          <div class="handle tl"></div>
-          <div class="handle tr"></div>
-          <div class="handle bl"></div>
-          <div class="handle br"></div>
-        </div>
-      </div>
+<div id="editor">
+    <img id="image" />
+    <div id="crop">
+        <div class="handle tl"></div>
+        <div class="handle tr"></div>
+        <div class="handle bl"></div>
+        <div class="handle br"></div>
     </div>
-  </div>
+</div>
 
-  <div class="toolbar">
-    <div class="left-controls">
-      <label class="btn small" id="btnImport">Importer
-        <input type="file" id="fileInput" accept="image/*">
-      </label>
-      <button class="btn small" id="btnReset">Reset</button>
-      <button class="btn small" id="btnFit">Fit</button>
-    </div>
-
-    <div class="grow">
-      <button class="btn small" id="zoomOut">−</button>
-      <div style="width:120px;text-align:center;color:var(--muted);font-size:13px" id="zoomLabel">100%</div>
-      <button class="btn small" id="zoomIn">+</button>
-    </div>
-
-    <div style="display:flex;gap:8px">
-      <label class="btn small"><input type="checkbox" id="roundMask" style="margin-right:8px">Masque rond</label>
-      <button class="btn accent small" id="btnExport">Exporter</button>
-    </div>
-  </div>
+<div id="tools">
+    <button id="exportBtn">Export</button>
+    <input type="range" id="radius" min="0" max="150" value="0">
 </div>
 
 <script>
-/* ====== Variables ====== */
-const fileInput = document.getElementById('fileInput');
-const btnImport = document.getElementById('btnImport');
-const btnReset = document.getElementById('btnReset');
-const btnFit = document.getElementById('btnFit');
-const btnExport = document.getElementById('btnExport');
-const zoomIn = document.getElementById('zoomIn');
-const zoomOut = document.getElementById('zoomOut');
-const zoomLabel = document.getElementById('zoomLabel');
-const roundMask = document.getElementById('roundMask');
+const img = document.getElementById("image");
+const crop = document.getElementById("crop");
+const radiusSlider = document.getElementById("radius");
 
-const viewer = document.getElementById('viewer');
-const cropContainer = document.getElementById('cropContainer');
-const imageDisplay = document.getElementById('imageDisplay');
-const cropArea = document.getElementById('cropArea');
-const layers = document.getElementById('layers');
+let scale = 1;
+let lastDist = 0;
+let dragging = false;
+let startX = 0, startY = 0;
+let imgX = 0, imgY = 0;
 
-let img = new Image();
-let imgLoaded = false;
+/* ========= CHARGEMENT IMAGE ========= */
+document.getElementById("file").onchange = e => {
+    const file = e.target.files[0];
+    img.src = URL.createObjectURL(file);
 
-// transform state (we DO NOT use CSS scale; we set width/height of img element)
-let currentZoom = 1;           // zoom factor (1 = natural size fitting container)
-let imgPos = {x:0,y:0};        // translate (px) of image top-left relative to container
-let lastTouchDist = null;      // for pinch
-let isPanning = false;         // one-finger drag image
-let panStart = {x:0,y:0};
+    img.onload = () => {
+        scale = 1;
+        img.style.left = "0px";
+        img.style.top = "0px";
+        img.style.transform = "scale(1)";
+        crop.style.left = "50px";
+        crop.style.top = "50px";
+        crop.style.width = "200px";
+        crop.style.height = "200px";
+    };
+};
 
-// crop drag/resize
-let isDraggingCrop = false, cropDragStart = {}, cropStartRect = {};
-let isResizingHandle = null, resizeStart = {mouseX:0,mouseY:0}, cropStartForResize = {};
+/* ========= PINCH ZOOM ========= */
+document.addEventListener("touchmove", e => {
+    if (e.touches.length === 2) {
+        e.preventDefault();
 
-/* ====== Helpers ====== */
-function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
-function setZoomLabel(){ zoomLabel.textContent = Math.round(currentZoom*100) + '%' }
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const dist = Math.sqrt(dx*dx + dy*dy);
 
-/* ====== Import image ====== */
-fileInput.addEventListener('change', (e)=>{
-  const f = e.target.files[0];
-  if(!f) return;
-  const url = URL.createObjectURL(f);
-  loadImageSrc(url);
-});
+        if (lastDist === 0) lastDist = dist;
 
-btnImport.addEventListener('click', ()=> fileInput.click());
-btnReset.addEventListener('click', resetAll);
-btnFit.addEventListener('click', fitImage);
+        let diff = dist - lastDist;
 
-/* ====== Load & initialize image into container ====== */
-function loadImageSrc(src){
-  img = new Image();
-  img.onload = () => {
-    imgLoaded = true;
-    // compute fitted display size (fit inside container)
-    const contW = cropContainer.clientWidth, contH = cropContainer.clientHeight;
-    const ar = img.naturalWidth / img.naturalHeight;
-    let displayW = contW, displayH = Math.round(displayW / ar);
-    if(displayH > contH){ displayH = contH; displayW = Math.round(displayH * ar); }
-    // set zoom so displayW = naturalWidth * currentZoom  => currentZoom = displayW / naturalWidth
-    currentZoom = displayW / img.naturalWidth;
-    imageDisplay.src = src;
-    imageDisplay.style.width = Math.round(img.naturalWidth * currentZoom) + 'px';
-    imageDisplay.style.height = Math.round(img.naturalHeight * currentZoom) + 'px';
-    // center image inside container
-    imgPos.x = Math.round((contW - displayW) / 2);
-    imgPos.y = Math.round((contH - displayH) / 2);
-    imageDisplay.style.left = imgPos.x + 'px';
-    imageDisplay.style.top = imgPos.y + 'px';
-    // set crop area to 70% of container by default
-    const cw = Math.round(contW * 0.8), ch = Math.round(contH * 0.6);
-    cropArea.style.left = Math.round((contW-cw)/2) + 'px';
-    cropArea.style.top = Math.round((contH-ch)/2) + 'px';
-    cropArea.style.width = cw + 'px';
-    cropArea.style.height = ch + 'px';
-    layers.innerHTML = ''; // clear overlays
-    setZoomLabel();
-  };
-  img.src = src;
-}
+        scale += diff * 0.005;
+        if (scale < 0.3) scale = 0.3;
+        if (scale > 5) scale = 5;
 
-/* ====== Fit image helper ====== */
-function fitImage(){
-  if(!imgLoaded) return;
-  const contW = cropContainer.clientWidth, contH = cropContainer.clientHeight;
-  const ar = img.naturalWidth / img.naturalHeight;
-  let displayW = contW, displayH = Math.round(displayW / ar);
-  if(displayH > contH){ displayH = contH; displayW = Math.round(displayH * ar); }
-  currentZoom = displayW / img.naturalWidth;
-  imageDisplay.style.width = Math.round(img.naturalWidth * currentZoom) + 'px';
-  imageDisplay.style.height = Math.round(img.naturalHeight * currentZoom) + 'px';
-  imgPos.x = Math.round((contW - displayW) / 2);
-  imgPos.y = Math.round((contH - displayH) / 2);
-  imageDisplay.style.left = imgPos.x + 'px';
-  imageDisplay.style.top = imgPos.y + 'px';
-  setZoomLabel();
-}
+        img.style.transform = `scale(${scale})`;
 
-/* ====== Zoom buttons ====== */
-zoomIn.addEventListener('click', ()=> {
-  if(!imgLoaded) return;
-  changeZoom(currentZoom * 1.12);
-});
-zoomOut.addEventListener('click', ()=> {
-  if(!imgLoaded) return;
-  changeZoom(currentZoom / 1.12);
-});
-
-function changeZoom(newZoom, center=null){
-  // center in container coords (default: container center)
-  const contRect = cropContainer.getBoundingClientRect();
-  const cx = center ? center.x : contRect.width/2;
-  const cy = center ? center.y : contRect.height/2;
-  const prev = currentZoom;
-  newZoom = clamp(newZoom, 0.05, 8);
-  // keep point under center stable: adjust imgPos
-  // point in image local coords before = (cx - imgPos.x) / prev
-  const localX = (cx - imgPos.x) / prev;
-  const localY = (cy - imgPos.y) / prev;
-  imgPos.x = Math.round(cx - localX * newZoom);
-  imgPos.y = Math.round(cy - localY * newZoom);
-  currentZoom = newZoom;
-  imageDisplay.style.width = Math.round(img.naturalWidth * currentZoom) + 'px';
-  imageDisplay.style.height = Math.round(img.naturalHeight * currentZoom) + 'px';
-  imageDisplay.style.left = imgPos.x + 'px';
-  imageDisplay.style.top = imgPos.y + 'px';
-  setZoomLabel();
-}
-
-/* ====== One-finger pan (image) & touch gestures ====== */
-/* mouse fallback for desktop */
-imageDisplay.addEventListener('mousedown', (e)=>{
-  if(!imgLoaded) return;
-  isPanning = true;
-  panStart.x = e.clientX - imgPos.x;
-  panStart.y = e.clientY - imgPos.y;
-  e.preventDefault();
-});
-document.addEventListener('mousemove', (e)=>{
-  if(isPanning){
-    imgPos.x = Math.round(e.clientX - panStart.x);
-    imgPos.y = Math.round(e.clientY - panStart.y);
-    imageDisplay.style.left = imgPos.x + 'px';
-    imageDisplay.style.top = imgPos.y + 'px';
-  }
-});
-document.addEventListener('mouseup', ()=> isPanning=false);
-
-/* Touch handling: pinch to zoom and two-finger pan */
-cropContainer.addEventListener('touchstart', (e)=>{
-  if(!imgLoaded) return;
-  if(e.touches.length === 1){
-    // single finger: start pan image if touching image
-    const t = e.touches[0];
-    // detect if starting inside cropArea? We want pan image when touching image not crop handles
-    isPanning = true;
-    panStart.x = t.clientX - imgPos.x;
-    panStart.y = t.clientY - imgPos.y;
-  } else if(e.touches.length === 2){
-    // two-finger: pinch zoom + pan
-    lastTouchDist = getDist(e.touches[0], e.touches[1]);
-    // center point for zoom stability
-    const mid = getMid(e.touches[0], e.touches[1]);
-    pinchMid = mid;
-    // store offsets for pan using two fingers: track average movement
-    twoFingerStart = {x: (e.touches[0].clientX + e.touches[1].clientX)/2 - imgPos.x,
-                     y: (e.touches[0].clientY + e.touches[1].clientY)/2 - imgPos.y};
-  }
-}, {passive:false});
-
-cropContainer.addEventListener('touchmove', (e)=>{
-  if(!imgLoaded) return;
-  if(e.touches.length === 1 && isPanning){
-    const t = e.touches[0];
-    imgPos.x = Math.round(t.clientX - panStart.x);
-    imgPos.y = Math.round(t.clientY - panStart.y);
-    imageDisplay.style.left = imgPos.x + 'px';
-    imageDisplay.style.top = imgPos.y + 'px';
-  } else if(e.touches.length === 2){
-    e.preventDefault();
-    const dist = getDist(e.touches[0], e.touches[1]);
-    const mid = getMid(e.touches[0], e.touches[1]);
-    if(lastTouchDist){
-      // zoom factor change
-      const factor = dist / lastTouchDist;
-      const newZoom = clamp(currentZoom * factor, 0.05, 8);
-      changeZoom(newZoom, {x: mid.x, y: mid.y});
+        lastDist = dist;
     }
-    // two-finger pan: keep midpoint anchored to imagePos relative movement
-    const avgX = (e.touches[0].clientX + e.touches[1].clientX)/2;
-    const avgY = (e.touches[0].clientY + e.touches[1].clientY)/2;
-    imgPos.x = Math.round(avgX - twoFingerStart.x);
-    imgPos.y = Math.round(avgY - twoFingerStart.y);
-    imageDisplay.style.left = imgPos.x + 'px';
-    imageDisplay.style.top = imgPos.y + 'px';
-    lastTouchDist = dist;
-    pinchMid = mid;
-  }
-}, {passive:false});
+}, { passive: false });
 
-cropContainer.addEventListener('touchend', (e)=>{
-  if(e.touches.length < 2) lastTouchDist = null;
-  if(e.touches.length === 0) isPanning = false;
+document.addEventListener("touchend", () => {
+    lastDist = 0;
 });
 
-/* helpers for touch */
-function getDist(a,b){ const dx = a.clientX - b.clientX; const dy = a.clientY - b.clientY; return Math.hypot(dx,dy); }
-function getMid(a,b){ return {x:(a.clientX+b.clientX)/2, y:(a.clientY+b.clientY)/2}; }
-
-/* ====== Crop area drag & resize (handles) ====== */
-function rectFrom(el){ return {left: parseFloat(el.style.left||0), top: parseFloat(el.style.top||0), width: parseFloat(el.style.width||100), height: parseFloat(el.style.height||100)}; }
-
-cropArea.addEventListener('mousedown', (e)=>{
-  if(e.target.classList.contains('handle')) return; // move separate
-  isDraggingCrop = true;
-  cropDragStart = {mouseX:e.clientX, mouseY:e.clientY};
-  cropStartRect = rectFrom(cropArea);
-});
-document.addEventListener('mousemove', (e)=>{
-  if(isDraggingCrop){
-    const dx = e.clientX - cropDragStart.mouseX;
-    const dy = e.clientY - cropDragStart.mouseY;
-    const contW = cropContainer.clientWidth, contH = cropContainer.clientHeight;
-    let nx = cropStartRect.left + dx, ny = cropStartRect.top + dy;
-    nx = clamp(nx, 0, contW - cropStartRect.width);
-    ny = clamp(ny, 0, contH - cropStartRect.height);
-    cropArea.style.left = nx + 'px'; cropArea.style.top = ny + 'px';
-  }
-  if(isResizingHandle){
-    handleResizeMouse(e.clientX, e.clientY);
-  }
-});
-document.addEventListener('mouseup', ()=> { isDraggingCrop = false; isResizingHandle = null; });
-
-/* handle elements */
-const h_tl = cropArea.querySelector('.tl'), h_tr = cropArea.querySelector('.tr'), h_bl = cropArea.querySelector('.bl'), h_br = cropArea.querySelector('.br');
-
-[h_tl,h_tr,h_bl,h_br].forEach(h=>{
-  h.addEventListener('mousedown', (e)=>{
-    e.stopPropagation(); e.preventDefault();
-    isResizingHandle = h.classList.contains('tl') ? 'tl' : h.classList.contains('tr') ? 'tr' : h.classList.contains('bl') ? 'bl' : 'br';
-    resizeStart.mouseX = e.clientX; resizeStart.mouseY = e.clientY;
-    cropStartForResize = rectFrom(cropArea);
-  });
+/* ========= DRAG IMAGE ========= */
+document.addEventListener("touchstart", e => {
+    if (e.touches.length === 1) {
+        dragging = true;
+        startX = e.touches[0].clientX - imgX;
+        startY = e.touches[0].clientY - imgY;
+    }
 });
 
-function handleResizeMouse(mx,my){
-  const rect = cropStartForResize;
-  let newRect = {...rect};
-  const dx = mx - resizeStart.mouseX;
-  const dy = my - resizeStart.mouseY;
-  if(isResizingHandle === 'tl'){
-    newRect.left = rect.left + dx; newRect.top = rect.top + dy;
-    newRect.width = rect.width - dx; newRect.height = rect.height - dy;
-  } else if(isResizingHandle === 'tr'){
-    newRect.top = rect.top + dy; newRect.width = rect.width + dx; newRect.height = rect.height - dy;
-  } else if(isResizingHandle === 'bl'){
-    newRect.left = rect.left + dx; newRect.width = rect.width - dx; newRect.height = rect.height + dy;
-  } else if(isResizingHandle === 'br'){
-    newRect.width = rect.width + dx; newRect.height = rect.height + dy;
-  }
-  // min size & clamp
-  newRect.width = Math.max(60,newRect.width);
-  newRect.height = Math.max(60,newRect.height);
-  newRect.left = clamp(newRect.left, 0, cropContainer.clientWidth - newRect.width);
-  newRect.top = clamp(newRect.top, 0, cropContainer.clientHeight - newRect.height);
-  cropArea.style.left = newRect.left + 'px';
-  cropArea.style.top = newRect.top + 'px';
-  cropArea.style.width = newRect.width + 'px';
-  cropArea.style.height = newRect.height + 'px';
-}
-
-/* touch for crop area (move) */
-cropArea.addEventListener('touchstart', (e)=>{
-  if(e.touches.length===1 && !e.target.classList.contains('handle')){
-    isDraggingCrop = true;
-    const t = e.touches[0];
-    cropDragStart = {mouseX:t.clientX, mouseY:t.clientY};
-    cropStartRect = rectFrom(cropArea);
-  } else if(e.touches.length===1 && e.target.classList.contains('handle')){
-    // TODO: small phone UX - handle resizing by touch is supported via same mouse handlers; simpler to ignore
-  }
-}, {passive:false});
-cropArea.addEventListener('touchmove', (e)=>{
-  if(isDraggingCrop && e.touches.length===1){
-    const t = e.touches[0];
-    const dx = t.clientX - cropDragStart.mouseX; const dy = t.clientY - cropDragStart.mouseY;
-    const contW = cropContainer.clientWidth, contH = cropContainer.clientHeight;
-    let nx = cropStartRect.left + dx, ny = cropStartRect.top + dy;
-    nx = clamp(nx, 0, contW - cropStartRect.width);
-    ny = clamp(ny, 0, contH - cropStartRect.height);
-    cropArea.style.left = nx + 'px'; cropArea.style.top = ny + 'px';
-  }
-}, {passive:false});
-cropArea.addEventListener('touchend', ()=> isDraggingCrop = false);
-
-/* ====== Export without black bug ======
-We map crop coords (client) to image natural pixels:
-- imageDisplayedWidth = img.naturalWidth * currentZoom  (we set imageDisplay.width accordingly)
-- scale = img.naturalWidth / imageDisplayedWidth = 1/currentZoom
-- cropX_in_natural = (cropRect.left - imgRect.left) * scale
-*/
-btnExport.addEventListener('click', ()=>{
-  if(!imgLoaded){ alert('Importe d\'abord une image'); return; }
-  const imgRect = imageDisplay.getBoundingClientRect();
-  const cropRect = cropArea.getBoundingClientRect();
-  // compute display dims (as set)
-  const displayW = imageDisplay.clientWidth;
-  const displayH = imageDisplay.clientHeight;
-  const scale = img.naturalWidth / displayW; // = 1/currentZoom
-  // compute crop origin relative to image top-left
-  const cropX = Math.round((cropRect.left - imgRect.left) * scale);
-  const cropY = Math.round((cropRect.top - imgRect.top) * scale);
-  const cropW = Math.round(cropRect.width * scale);
-  const cropH = Math.round(cropRect.height * scale);
-  // clamp to image bounds
-  const sx = clamp(cropX, 0, img.naturalWidth);
-  const sy = clamp(cropY, 0, img.naturalHeight);
-  const sw = clamp(cropW, 0, img.naturalWidth - sx);
-  const sh = clamp(cropH, 0, img.naturalHeight - sy);
-  if(sw <=0 || sh <=0){ alert('Zone de recadrage invalide'); return; }
-  // create final canvas of natural pixels (crop size)
-  const finalCanvas = document.createElement('canvas');
-  finalCanvas.width = sw; finalCanvas.height = sh;
-  const fctx = finalCanvas.getContext('2d');
-  fctx.imageSmoothingQuality = 'high';
-  // draw the crop from natural image
-  fctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
-  // draw simple layers (text/stickers) if any - here we don't support complex layers yet
-  // apply round mask if toggled
-  if(roundMask.checked){
-    fctx.globalCompositeOperation = 'destination-in';
-    fctx.beginPath();
-    fctx.arc(sw/2, sh/2, Math.min(sw,sh)/2, 0, Math.PI*2);
-    fctx.closePath();
-    fctx.fill();
-    fctx.globalCompositeOperation = 'source-over';
-  }
-  // export as PNG
-  const link = document.createElement('a');
-  link.href = finalCanvas.toDataURL('image/png');
-  link.download = 'pixlab_mobile_crop.png';
-  link.click();
+document.addEventListener("touchmove", e => {
+    if (dragging && e.touches.length === 1) {
+        imgX = e.touches[0].clientX - startX;
+        imgY = e.touches[0].clientY - startY;
+        img.style.left = imgX + "px";
+        img.style.top = imgY + "px";
+    }
 });
 
-/* ====== Reset ====== */
-function resetAll(){
-  imageDisplay.src = '';
-  img = new Image(); imgLoaded = false;
-  currentZoom = 1; imgPos = {x:0,y:0};
-  imageDisplay.style.left = '0px'; imageDisplay.style.top='0px';
-  imageDisplay.style.width = 'auto'; imageDisplay.style.height = 'auto';
-  cropArea.style.left = '20px'; cropArea.style.top = '20px'; cropArea.style.width = '80%'; cropArea.style.height = '60%';
-  layers.innerHTML = '';
-  setZoomLabel();
-}
+document.addEventListener("touchend", () => dragging = false);
 
-/* initialize default crop area when loaded (relative coords) */
-window.addEventListener('resize', ()=>{
-  // keep image fitting if no image loaded: set crop area to some defaults
-  if(!imgLoaded){
-    cropArea.style.left = '20px'; cropArea.style.top = '20px';
-    cropArea.style.width = (cropContainer.clientWidth - 40) + 'px';
-    cropArea.style.height = (cropContainer.clientHeight - 120) + 'px';
-  } else {
-    // maintain position if possible
-    imageDisplay.style.left = imgPos.x + 'px';
-    imageDisplay.style.top = imgPos.y + 'px';
-  }
+/* ========= HANDLE RESIZE ========= */
+let resizing = false;
+let currentHandle = null;
+
+document.querySelectorAll(".handle").forEach(h => {
+    h.addEventListener("touchstart", e => {
+        e.stopPropagation();
+        resizing = true;
+        currentHandle = h;
+    });
 });
 
-/* initial cropArea default */
-cropArea.style.left = '20px'; cropArea.style.top = '20px';
-cropArea.style.width = (cropContainer.clientWidth - 40) + 'px';
-cropArea.style.height = (Math.round(cropContainer.clientHeight * 0.6)) + 'px';
+document.addEventListener("touchmove", e => {
+    if (!resizing) return;
 
-setZoomLabel();
+    const r = crop.getBoundingClientRect();
+    const x = e.touches[0].clientX;
+    const y = e.touches[0].clientY;
+
+    if (currentHandle.classList.contains("tr")) {
+        crop.style.width = (x - r.left) + "px";
+        crop.style.height = (r.bottom - y) + "px";
+        crop.style.top = y + "px";
+    }
+    if (currentHandle.classList.contains("tl")) {
+        crop.style.width = (r.right - x) + "px";
+        crop.style.height = (r.bottom - y) + "px";
+        crop.style.left = x + "px";
+        crop.style.top = y + "px";
+    }
+    if (currentHandle.classList.contains("bl")) {
+        crop.style.width = (r.right - x) + "px";
+        crop.style.height = (y - r.top) + "px";
+        crop.style.left = x + "px";
+    }
+    if (currentHandle.classList.contains("br")) {
+        crop.style.width = (x - r.left) + "px";
+        crop.style.height = (y - r.top) + "px";
+    }
+}, { passive: false });
+
+document.addEventListener("touchend", () => resizing = false);
+
+/* ========= BORDER RADIUS ========= */
+radiusSlider.oninput = () => {
+    crop.style.borderRadius = radiusSlider.value + "px";
+};
+
+/* ========= EXPORT ========= */
+document.getElementById("exportBtn").onclick = () => {
+    alert("J’ajoute l’export propre juste après si cette base te convient !");
+};
 </script>
 </body>
 </html>
