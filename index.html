@@ -14,12 +14,13 @@ body{margin:0;font-family:Arial,sans-serif;background:#111;color:white;overflow:
 .handle.tr{top:0;right:0;}
 .handle.bl{bottom:0;left:0;}
 .handle.br{bottom:0;right:0;}
-#tools{position:fixed;bottom:0;left:0;right:0;height:15vh;background:rgba(50,50,50,0.9);display:flex;overflow-x:auto;white-space:nowrap;padding:5px;align-items:center;}
+#tools{position:fixed;bottom:0;left:0;right:0;height:18vh;background:rgba(50,50,50,0.9);display:flex;overflow-x:auto;white-space:nowrap;padding:5px;align-items:center;}
 .tool-group{display:flex;gap:8px;padding:0 5px;align-items:center;flex:none;}
-button,input[type=range],select{background:#222;border:none;padding:6px 12px;color:white;border-radius:10px;flex:none;}
+button,input[type=range],select,input[type=number]{background:#222;border:none;padding:6px 12px;color:white;border-radius:10px;flex:none;}
 input[type=range]{width:80px;}
+input[type=number]{width:60px;}
 #file{position:fixed;top:10px;left:10px; z-index:20;}
-.sticker, .textLayer{position:absolute;cursor:move;user-select:none;color:white;}
+.textLayer{position:absolute;cursor:move;user-select:none;color:white;}
 .tool{display:flex;flex-direction:column;align-items:center;gap:2px;}
 .label{font-size:12px;text-align:center;}
 </style>
@@ -53,16 +54,21 @@ input[type=range]{width:80px;}
     <div class="tool"><select id="filter"><option value="none">Normal</option><option value="grayscale(100%)">B/W</option><option value="sepia(80%)">Sepia</option><option value="invert(100%)">Invert</option></select><div class="label">Filter</div></div>
   </div>
 
-  <!-- Crop -->
+  <!-- Crop personnalisé -->
   <div class="tool-group">
     <div class="tool"><input type="range" id="radius" min="0" max="150" value="0"><div class="label">Border Radius</div></div>
-    <div class="tool"><select id="cropShape"><option value="free">Libre</option><option value="rect">Carré</option><option value="16:9">16:9</option><option value="4:3">4:3</option></select><div class="label">Crop</div></div>
+    <div class="tool">
+      <select id="cropShape"><option value="rect">Carré</option><option value="16:9">16:9</option><option value="4:3">4:3</option><option value="custom">Personnalisé</option></select>
+      <div class="label">Crop</div>
+    </div>
+    <div class="tool" id="customCropInputs" style="display:none;">
+      W: <input type="number" id="customWidth" value="200"> H: <input type="number" id="customHeight" value="200">
+    </div>
   </div>
 
-  <!-- Text / Sticker -->
+  <!-- Text -->
   <div class="tool-group">
     <div class="tool"><button id="addText">T</button><div class="label">Text</div></div>
-    <div class="tool"><button id="addSticker">★</button><div class="label">Sticker</div></div>
   </div>
 
   <!-- Export -->
@@ -86,9 +92,11 @@ const rotateRightBtn=document.getElementById("rotateRight");
 const flipHBtn=document.getElementById("flipH");
 const flipVBtn=document.getElementById("flipV");
 const addTextBtn=document.getElementById("addText");
-const addStickerBtn=document.getElementById("addSticker");
 const exportBtn=document.getElementById("exportBtn");
 const cropShapeSelect=document.getElementById("cropShape");
+const customCropInputs=document.getElementById("customCropInputs");
+const customWidthInput=document.getElementById("customWidth");
+const customHeightInput=document.getElementById("customHeight");
 
 let imgX=0,imgY=0,scale=1,rotation=0,flipH=1,flipV=1;
 let dragging=false,startX=0,startY=0;
@@ -133,25 +141,29 @@ function updateFilters(){
 // ---------- BORDER RADIUS ----------
 radiusSlider.oninput=()=>crop.style.borderRadius=radiusSlider.value+'px';
 
-// ---------- ADD TEXT / STICKER ----------
+// ---------- ADD TEXT ----------
 addTextBtn.onclick=()=>{
     const text=prompt("Texte à ajouter"); if(!text) return;
     const t=document.createElement("div"); t.className="textLayer"; t.innerText=text; t.style.left="60px"; t.style.top="60px"; t.style.fontSize="24px"; t.style.color="white"; document.getElementById("editor").appendChild(t);
 };
-addStickerBtn.onclick=()=>{
-    const url=prompt("URL du sticker"); if(!url) return;
-    const sE=document.createElement("img"); sE.className="sticker"; sE.src=url; sE.style.left="60px"; sE.style.top="60px"; sE.style.width="60px"; sE.style.height="60px"; document.getElementById("editor").appendChild(sE);
-};
 
 // ---------- CROP SHAPE ----------
 cropShapeSelect.onchange=()=>{
+    if(cropShapeSelect.value==='custom'){customCropInputs.style.display='flex';}else{customCropInputs.style.display='none';}
+    updateCropShape();
+};
+customWidthInput.oninput=customHeightInput.oninput=updateCropShape;
+
+function updateCropShape(){
     const val=cropShapeSelect.value;
-    if(val==='circle'){crop.style.borderRadius='50%';}
-    else if(val==='rect'){crop.style.borderRadius='0%';}
+    if(val==='rect'){crop.style.height=crop.offsetWidth+'px'; crop.style.borderRadius='0';}
     else if(val==='16:9'){crop.style.height=(crop.offsetWidth*9/16)+'px'; crop.style.borderRadius='0';}
     else if(val==='4:3'){crop.style.height=(crop.offsetWidth*3/4)+'px'; crop.style.borderRadius='0';}
-    else if(val==='free'){crop.style.height=img.height+'px'; crop.style.width=img.width+'px'; crop.style.borderRadius='0';}
-};
+    else if(val==='custom'){
+        crop.style.width=customWidthInput.value+'px';
+        crop.style.height=customHeightInput.value+'px';
+    }
+}
 
 // ---------- EXPORT ----------
 exportBtn.onclick=()=>{
@@ -168,8 +180,10 @@ exportBtn.onclick=()=>{
     const radius=parseInt(radiusSlider.value);
     if(radius>0 || cropShapeSelect.value==='circle'){
         ctx.beginPath();
-        if(cropShapeSelect.value==='circle'){ctx.arc(canvas.width/2,canvas.height/2,canvas.width/2,0,Math.PI*2);}
-        else{ctx.moveTo(radius,0); ctx.lineTo(canvas.width-radius,0); ctx.quadraticCurveTo(canvas.width,0,canvas.width,radius); ctx.lineTo(canvas.width,canvas.height-radius); ctx.quadraticCurveTo(canvas.width,canvas.height,canvas.width-radius,canvas.height); ctx.lineTo(radius,canvas.height); ctx.quadraticCurveTo(0,canvas.height,0,canvas.height-radius); ctx.lineTo(0,radius); ctx.quadraticCurveTo(0,0,radius,0);}
+        ctx.moveTo(radius,0); ctx.lineTo(canvas.width-radius,0); ctx.quadraticCurveTo(canvas.width,0,canvas.width,radius);
+        ctx.lineTo(canvas.width,canvas.height-radius); ctx.quadraticCurveTo(canvas.width,canvas.height,canvas.width-radius,canvas.height);
+        ctx.lineTo(radius,canvas.height); ctx.quadraticCurveTo(0,canvas.height,0,canvas.height-radius);
+        ctx.lineTo(0,radius); ctx.quadraticCurveTo(0,0,radius,0);
         ctx.closePath(); ctx.clip();
     }
 
