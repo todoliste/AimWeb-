@@ -1,130 +1,111 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>Flou avec masque</title>
-    <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            font-family: Arial, sans-serif;
-            background-color: #111;
-            color: #fff;
-            margin: 0;
-            padding: 20px;
-        }
-        canvas {
-            border: 2px solid #fff;
-            cursor: crosshair;
-        }
-        #controls {
-            margin: 10px;
-        }
-        button, input {
-            margin: 5px;
-            padding: 5px 10px;
-            font-size: 16px;
-        }
-    </style>
+<meta charset="UTF-8">
+<title>Masque Flou Drag & Drop</title>
+<style>
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #111;
+    color: #fff;
+    font-family: sans-serif;
+    margin: 0;
+    padding: 20px;
+  }
+  canvas {
+    border: 2px solid #fff;
+    cursor: grab;
+  }
+  #controls {
+    margin: 10px;
+  }
+  input, button {
+    margin: 5px;
+    padding: 5px 10px;
+    font-size: 16px;
+  }
+</style>
 </head>
 <body>
-    <h1>Flou avec masque</h1>
-    <input type="file" id="upload" accept="image/*">
-    <div id="controls">
-        <button id="clear">Effacer le masque</button>
-        <button id="applyBlur">Appliquer le flou</button>
-        <label>Taille du pinceau : <input type="range" id="brushSize" min="5" max="100" value="30"></label>
-    </div>
-    <canvas id="canvas" width="800" height="600"></canvas>
+<h1>Masque Flou Drag & Drop</h1>
+<input type="file" id="upload" accept="image/*">
+<div id="controls">
+  <button id="reset">Réinitialiser</button>
+</div>
+<canvas id="canvas" width="800" height="600"></canvas>
 
-    <script>
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        const upload = document.getElementById('upload');
-        const clearBtn = document.getElementById('clear');
-        const applyBlurBtn = document.getElementById('applyBlur');
-        const brushSizeInput = document.getElementById('brushSize');
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const upload = document.getElementById('upload');
+const resetBtn = document.getElementById('reset');
 
-        let img = new Image();
-        let drawing = false;
-        let mask = ctx.createImageData(canvas.width, canvas.height);
+let img = new Image();
+let mask = {x: 200, y: 150, w: 400, h: 300};
+let dragging = false;
+let offsetX, offsetY;
 
-        // Charger l'image
-        upload.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                img.src = event.target.result;
-            };
-            reader.readAsDataURL(file);
-        });
+// Charger l'image
+upload.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = event => img.src = event.target.result;
+    reader.readAsDataURL(file);
+});
 
-        img.onload = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            mask = ctx.createImageData(canvas.width, canvas.height); // Reset mask
-        };
+// Dessiner image + masque flou
+function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(img,0,0,canvas.width,canvas.height);
 
-        // Dessiner le masque
-        canvas.addEventListener('mousedown', () => drawing = true);
-        canvas.addEventListener('mouseup', () => drawing = false);
-        canvas.addEventListener('mouseleave', () => drawing = false);
+    // Flou dans le masque
+    ctx.save();
+    ctx.filter = 'blur(10px)';
+    ctx.beginPath();
+    ctx.rect(mask.x, mask.y, mask.w, mask.h);
+    ctx.clip();
+    ctx.drawImage(img,0,0,canvas.width,canvas.height);
+    ctx.restore();
 
-        canvas.addEventListener('mousemove', (e) => {
-            if (!drawing) return;
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            const size = parseInt(brushSizeInput.value);
+    // Contour du masque
+    ctx.strokeStyle = '#0f0';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(mask.x, mask.y, mask.w, mask.h);
+}
 
-            ctx.fillStyle = 'rgba(255,255,255,0.5)';
-            ctx.beginPath();
-            ctx.arc(x, y, size / 2, 0, Math.PI * 2);
-            ctx.fill();
+// Drag & Drop du rectangle
+canvas.addEventListener('mousedown', e => {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    if (x > mask.x && x < mask.x + mask.w && y > mask.y && y < mask.y + mask.h) {
+        dragging = true;
+        offsetX = x - mask.x;
+        offsetY = y - mask.y;
+        canvas.style.cursor = 'grabbing';
+    }
+});
+canvas.addEventListener('mouseup', () => { dragging = false; canvas.style.cursor = 'grab'; });
+canvas.addEventListener('mouseleave', () => { dragging = false; canvas.style.cursor = 'grab'; });
+canvas.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const rect = canvas.getBoundingClientRect();
+    mask.x = e.clientX - rect.left - offsetX;
+    mask.y = e.clientY - rect.top - offsetY;
+    draw();
+});
 
-            // Mettre à jour le masque
-            const imgData = ctx.getImageData(0,0,canvas.width,canvas.height);
-            mask.data.set(imgData.data);
-        });
+// Reset du masque
+resetBtn.addEventListener('click', () => {
+    mask = {x: 200, y: 150, w: 400, h: 300};
+    draw();
+});
 
-        // Effacer le masque
-        clearBtn.addEventListener('click', () => {
-            if (!img.src) return;
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            mask = ctx.createImageData(canvas.width, canvas.height);
-        });
-
-        // Appliquer le flou sur le masque
-        applyBlurBtn.addEventListener('click', () => {
-            if (!img.src) return;
-            // Créer un canvas temporaire
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = canvas.width;
-            tempCanvas.height = canvas.height;
-            const tempCtx = tempCanvas.getContext('2d');
-            tempCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            
-            // Appliquer le flou
-            tempCtx.filter = 'blur(10px)';
-            tempCtx.drawImage(canvas, 0, 0); // Dessiner le masque dessus
-            
-            // Combiner avec l'image originale
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-            // Masquer uniquement les zones peintes
-            const original = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const blurred = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
-            for (let i = 0; i < mask.data.length; i += 4) {
-                const alpha = mask.data[i] / 255; // Zone peinte
-                original.data[i] = original.data[i] * (1 - alpha) + blurred.data[i] * alpha;
-                original.data[i+1] = original.data[i+1] * (1 - alpha) + blurred.data[i+1] * alpha;
-                original.data[i+2] = original.data[i+2] * (1 - alpha) + blurred.data[i+2] * alpha;
-            }
-            ctx.putImageData(original, 0, 0);
-        });
-    </script>
+// Redessiner après chargement de l'image
+img.onload = draw;
+</script>
 </body>
 </html>
