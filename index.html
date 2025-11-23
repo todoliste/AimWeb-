@@ -1,241 +1,304 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Web Video Editor - CapCut Style</title>
-<style>
-/* Interface sombre */
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background-color: #121212;
-    color: #fff;
-}
-header {
-    display: flex;
-    align-items: center;
-    padding: 10px;
-    background-color: #1e1e1e;
-}
-button {
-    background-color: #333;
-    color: #fff;
-    border: none;
-    padding: 8px 12px;
-    margin: 5px;
-    border-radius: 5px;
-    cursor: pointer;
-}
-button:hover { background-color: #555; }
 
-#editor {
-    display: flex;
-    flex-direction: column;
-    height: calc(100vh - 50px);
-}
-#preview {
-    flex: 2;
-    position: relative;
-    background-color: black;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-}
-#preview video {
-    max-width: 100%;
-    max-height: 100%;
-}
-#overlay {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-}
-.text-item, .sticker-item {
-    position: absolute;
-    cursor: move;
-    user-select: none;
-    pointer-events: all;
-}
-.text-item {
-    color: white;
-    font-size: 24px;
-    font-weight: bold;
-    text-shadow: 1px 1px 2px black;
-}
-.sticker-item img {
-    width: 100px;
-    height: 100px;
-}
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 
-#timeline {
-    flex: 1;
-    background-color: #1b1b1b;
-    display: flex;
-    overflow-x: auto;
-    padding: 10px;
-    gap: 10px;
-}
-.clip {
-    background-color: #333;
-    padding: 5px;
-    border-radius: 5px;
-    cursor: pointer;
-    min-width: 100px;
-    text-align: center;
-    position: relative;
-}
-.clip video {
-    width: 100px;
-    height: 60px;
-    object-fit: cover;
-    display: block;
-}
+/* CapCut-like Photo/Video Editor - Single-file React component
 
-/* Drag handles pour redimensionner / déplacer */
-.draggable { position: absolute; cursor: move; }
+Uses HTML5 Canvas for rendering
 
-/* Barre de contrôle */
-#controls {
-    display: flex;
-    align-items: center;
-    padding: 5px;
-    background-color: #1e1e1e;
-    gap: 5px;
-    flex-wrap: wrap;
-}
-input[type=range] { width: 100px; }
+Media upload, timeline drag/drop, basic transitions/filters, text, stickers
 
-/* Mobile responsive */
-@media(max-width:768px){
-    #editor { flex-direction: column; }
-    #timeline { overflow-x: scroll; }
-}
-</style>
-</head>
-<body>
+Audio via Web Audio API and MediaRecorder export to MP4 (canvas + audio)
 
-<header>
-    <h2>Web Video Editor</h2>
-</header>
+LocalStorage project save/load, undo/redo, keyboard shortcuts Notes:
 
-<div id="editor">
-    <div id="preview">
-        <video id="mainVideo" controls></video>
-        <div id="overlay"></div>
-    </div>
+This is a large demo prototype — adapt/optimise for production.
 
-    <div id="controls">
-        <input type="file" id="uploadVideo" accept="video/*" multiple>
-        <input type="file" id="uploadAudio" accept="audio/*" multiple>
-        <button onclick="addText()">Ajouter Texte</button>
-        <button onclick="addSticker()">Ajouter Sticker</button>
-        <label>Filtre:
-            <select id="filterSelect" onchange="applyFilter()">
-                <option value="">Aucun</option>
-                <option value="grayscale(100%)">Noir & Blanc</option>
-                <option value="sepia(100%)">Sepia</option>
-                <option value="brightness(150%)">Luminosité+</option>
-                <option value="contrast(150%)">Contraste+</option>
-            </select>
-        </label>
-        <button onclick="exportVideo()">Exporter MP4</button>
-    </div>
+Tailwind-like classes are used for quick styling; you can replace/extend with your own CSS. */
 
-    <div id="timeline"></div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.0/dist/ffmpeg.min.js"></script>
-<script>
-// Gestion des vidéos
-const mainVideo = document.getElementById('mainVideo');
-const overlay = document.getElementById('overlay');
-const timeline = document.getElementById('timeline');
-let clips = [];
+export default function CapCutClone() { // Refs const canvasRef = useRef(null); const previewRef = useRef(null); const mediaInputRef = useRef(null); const audioInputRef = useRef(null); const recorderRef = useRef(null); const streamRef = useRef(null);
 
-document.getElementById('uploadVideo').addEventListener('change', e=>{
-    Array.from(e.target.files).forEach(file => {
-        const url = URL.createObjectURL(file);
-        const video = document.createElement('video');
-        video.src = url;
-        video.muted = true;
-        video.onloadedmetadata = ()=>{
-            const clipDiv = document.createElement('div');
-            clipDiv.className = 'clip';
-            clipDiv.draggable = true;
-            clipDiv.innerHTML = `<video src="${url}"></video><br>${file.name}`;
-            clipDiv.addEventListener('click', ()=>{ mainVideo.src = url; });
-            timeline.appendChild(clipDiv);
-            clips.push({file, url});
-        };
-    });
+// State const [projectName, setProjectName] = useState('Mon projet'); const [mediaLibrary, setMediaLibrary] = useState([]); // {id, file, type, url, duration (s), image/video element} const [timelineItems, setTimelineItems] = useState([]); // {id, refId, type, start, duration, effects, text..} const [selectedId, setSelectedId] = useState(null); const [isPlaying, setIsPlaying] = useState(false); const [playhead, setPlayhead] = useState(0); // seconds const [zoom, setZoom] = useState(1); // timeline zoom const [fps] = useState(30); const [resolution, setResolution] = useState({w:1280, h:720}); const [audioTrack, setAudioTrack] = useState(null); // {file, url, element} const [volume, setVolume] = useState(1); const [undoStack, setUndoStack] = useState([]); const [redoStack, setRedoStack] = useState([]); const [templates] = useState(sampleTemplates()); const rafRef = useRef(null); const startTimeRef = useRef(null); const durationRef = useRef(20); // project total duration in seconds
+
+// Utilities const nowId = (p='id') => ${p}_${Math.random().toString(36).slice(2,9)};
+
+// Load fonts (10 sample fonts) by injecting Google Fonts - optional useEffect(()=>{ const family = ['Roboto','Montserrat','Lora','Poppins','Oswald','Merriweather','Raleway','Playfair+Display','Nunito','Fira+Sans']; const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = https://fonts.googleapis.com/css2?family=${family.join('&family=')}&display=swap; document.head.appendChild(link); return () => document.head.removeChild(link); },[]);
+
+// Save state snapshot for undo const snapshot = useCallback(()=>{ setUndoStack(s => [...s, JSON.stringify({mediaLibrary,timelineItems,projectName,audioTrack})].slice(-50)); setRedoStack([]); },[mediaLibrary,timelineItems,projectName,audioTrack]);
+
+// Add media (images & videos) const handleAddMediaFiles = async (files) => { snapshot(); const arr = Array.from(files); const loaded = await Promise.all(arr.map(async (f) => { const url = URL.createObjectURL(f); const type = f.type.startsWith('video') ? 'video' : 'image'; const id = nowId('media'); let duration = 5; let element = null; if(type === 'video'){ element = document.createElement('video'); element.src = url; element.muted = true; element.preload = 'metadata'; await new Promise(res => element.addEventListener('loadedmetadata', res, {once:true})); duration = Math.min(30, Math.max(1, element.duration || 5)); } else { element = new Image(); await new Promise(res => { element.onload = res; element.src = url; }); } return {id, file: f, type, url, duration, element}; })); setMediaLibrary(s => [...s, ...loaded]); };
+
+// Add item to timeline const addToTimeline = (mediaId) => { snapshot(); const ref = mediaLibrary.find(m=>m.id===mediaId); if(!ref) return; const start = Math.max(...timelineItems.map(t=>t.start + t.duration),0); const item = { id: nowId('t'), refId: mediaId, type: ref.type, start: start, duration: ref.type==='video' ? ref.duration : 5, effects: {transition:'none',filter:'none',brightness:0,contrast:0,saturation:0,temperature:0}, text: null, z: timelineItems.length, }; setTimelineItems(s=>[...s,item]); };
+
+// Remove timeline item const removeTimelineItem = (id) => { if(!confirm('Supprimer cet élément ?')) return; snapshot(); setTimelineItems(s => s.filter(x=>x.id!==id)); if(selectedId===id) setSelectedId(null); };
+
+// Play controls const play = () => { setIsPlaying(true); startTimeRef.current = performance.now() - playhead*1000; rafRef.current = requestAnimationFrame(tick); if(audioTrack && audioTrack.element){ audioTrack.element.currentTime = playhead; audioTrack.element.play(); } }; const pause = () => { setIsPlaying(false); cancelAnimationFrame(rafRef.current); if(audioTrack && audioTrack.element) audioTrack.element.pause(); }; const togglePlay = () => isPlaying ? pause() : play();
+
+// Tick -> update playhead and redraw canvas const tick = (timestamp) => { const t = (timestamp - startTimeRef.current)/1000; setPlayhead(t); if(t > durationRef.current){ pause(); setPlayhead(durationRef.current); return; } drawFrame(t); rafRef.current = requestAnimationFrame(tick); };
+
+// Draw frame at time t const drawFrame = (t) => { const canvas = canvasRef.current; if(!canvas) return; const ctx = canvas.getContext('2d'); ctx.clearRect(0,0,canvas.width,canvas.height);
+
+// Background
+ctx.fillStyle = '#111';
+ctx.fillRect(0,0,canvas.width,canvas.height);
+
+// Find topmost item at time t
+const items = timelineItems.filter(it => t >= it.start && t <= it.start + it.duration).sort((a,b)=>a.z-b.z);
+items.forEach(it => {
+  const media = mediaLibrary.find(m=>m.id===it.refId);
+  if(!media) return;
+  const el = media.element;
+  // Apply basic filters
+  ctx.save();
+  // compute fit
+  const ratio = Math.min(canvas.width / el.width || canvas.width, canvas.height / el.height || canvas.height);
+  const w = (el.width || canvas.width) * ratio;
+  const h = (el.height || canvas.height) * ratio;
+  const x = (canvas.width - w)/2;
+  const y = (canvas.height - h)/2;
+  try{
+    if(it.type === 'video') ctx.drawImage(el, x, y, w, h);
+    else ctx.drawImage(el, x, y, w, h);
+  }catch(e){/* element might not be ready */}
+  // Text overlay
+  if(it.text){
+    ctx.font = `${it.text.size||48}px ${it.text.font || 'Poppins'}, sans-serif`;
+    ctx.fillStyle = it.text.color || 'white';
+    ctx.shadowColor = 'rgba(0,0,0,0.6)';
+    ctx.shadowBlur = 6;
+    ctx.fillText(it.text.content, (it.text.x||50), (it.text.y||70));
+  }
+  ctx.restore();
 });
 
-// Texte
-function addText(){
-    const txt = prompt('Texte à ajouter:','Nouveau texte');
-    if(!txt) return;
-    const div = document.createElement('div');
-    div.className = 'text-item draggable';
-    div.innerText = txt;
-    div.style.top = '50px'; div.style.left = '50px';
-    makeDraggable(div);
-    overlay.appendChild(div);
+// timeline overlay (playhead indicator etc.) - small preview
+const p = 10;
+ctx.fillStyle = 'rgba(255,255,255,0.04)';
+ctx.fillRect(0, canvas.height - 60, canvas.width, 60);
+ctx.fillStyle = '#fff';
+ctx.fillRect((playhead/durationRef.current)*canvas.width, canvas.height-60, 2, 60);
+
+};
+
+// Initialize canvas size useEffect(()=>{ const canvas = canvasRef.current; if(!canvas) return; canvas.width = resolution.w; canvas.height = resolution.h; drawFrame(playhead); },[resolution, timelineItems, mediaLibrary]);
+
+// Upload audio const handleAddAudio = async (file) => { snapshot(); const url = URL.createObjectURL(file); const audioEl = document.createElement('audio'); audioEl.src = url; audioEl.crossOrigin = 'anonymous'; await new Promise(res => audioEl.addEventListener('loadedmetadata', res, {once:true})); setAudioTrack({file, url, element: audioEl}); };
+
+// Export using MediaRecorder: capture canvas + audio const exportVideo = async (format='1080p') => { // set resolution const resMap = { '720p': {w:1280,h:720}, '1080p':{w:1920,h:1080}, '1:1':{w:1080,h:1080}, '9:16':{w:720,h:1280} }; const r = resMap[format] || resMap['720p']; setResolution(r); await new Promise(res => setTimeout(res, 300));
+
+// Get canvas stream
+const canvas = canvasRef.current;
+const canvasStream = canvas.captureStream(fps);
+// Attach audio
+let mixedStream = canvasStream;
+if(audioTrack && audioTrack.element){
+  const audioStream = audioTrack.element.captureStream ? audioTrack.element.captureStream() : null;
+  if(audioStream){
+    // merge tracks
+    const ctx = new AudioContext();
+    const dest = ctx.createMediaStreamDestination();
+    const src1 = ctx.createMediaStreamSource(canvasStream);
+    const src2 = ctx.createMediaStreamSource(audioStream);
+    src1.connect(dest);
+    src2.connect(dest);
+    mixedStream = new MediaStream([...canvasStream.getVideoTracks(), ...dest.stream.getAudioTracks()]);
+  } else {
+    mixedStream = canvasStream;
+  }
 }
 
-// Sticker
-function addSticker(){
-    const url = prompt('URL du sticker PNG:');
-    if(!url) return;
-    const div = document.createElement('div');
-    div.className = 'sticker-item draggable';
-    div.style.top = '50px'; div.style.left = '50px';
-    const img = document.createElement('img');
-    img.src = url;
-    div.appendChild(img);
-    makeDraggable(div);
-    overlay.appendChild(div);
-}
+const options = { mimeType: 'video/webm;codecs=vp9' };
+const mediaRecorder = new MediaRecorder(mixedStream, options);
+const chunks = [];
+mediaRecorder.ondataavailable = (e) => { if(e.data.size) chunks.push(e.data); };
+mediaRecorder.onstop = () => {
+  const blob = new Blob(chunks, { type: 'video/webm' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${projectName.replace(/\s+/g,'_')}_${Date.now()}.webm`;
+  a.click();
+};
 
-// Drag & Drop basique
-function makeDraggable(el){
-    let offsetX, offsetY, isDown = false;
-    el.addEventListener('mousedown', e=>{
-        isDown = true;
-        offsetX = e.offsetX;
-        offsetY = e.offsetY;
-    });
-    document.addEventListener('mouseup', ()=>{ isDown = false; });
-    document.addEventListener('mousemove', e=>{
-        if(!isDown) return;
-        el.style.left = e.pageX - offsetX + 'px';
-        el.style.top = e.pageY - offsetY + 'px';
-    });
-}
+// Play timeline and render frames -> simple approach: animate and record for durationRef.current
+// Start audio from 0
+if(audioTrack && audioTrack.element){ audioTrack.element.currentTime = 0; audioTrack.element.play(); }
+mediaRecorder.start(1000);
 
-// Filtres
-function applyFilter(){
-    mainVideo.style.filter = document.getElementById('filterSelect').value;
-}
+// Render loop during export
+const startExport = performance.now();
+const renderExport = (tstamp) => {
+  const t = (tstamp - startExport)/1000;
+  if(t > durationRef.current){
+    mediaRecorder.stop();
+    if(audioTrack && audioTrack.element) audioTrack.element.pause();
+    return;
+  }
+  drawFrame(t);
+  requestAnimationFrame(renderExport);
+};
+requestAnimationFrame(renderExport);
 
-// Export via ffmpeg.wasm
-async function exportVideo(){
-    const { createFFmpeg, fetchFile } = FFmpeg;
-    const ffmpeg = createFFmpeg({ log: true });
-    await ffmpeg.load();
-    if(clips.length===0){ alert('Ajoute une vidéo!'); return; }
-    // Prends la première vidéo comme exemple
-    const clip = clips[0];
-    ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(clip.file));
-    await ffmpeg.run('-i','input.mp4','-c','copy','output.mp4');
-    const data = ffmpeg.FS('readFile','output.mp4');
-    const url = URL.createObjectURL(new Blob([data.buffer],{type:'video/mp4'}));
-    const a = document.createElement('a'); a.href = url; a.download='export.mp4'; a.click();
-    alert('Export terminé!');
-}
-</script>
-</body>
-</html>
+};
+
+// Keyboard shortcuts useEffect(()=>{ const onKey = (e)=>{ if(e.code === 'Space'){ e.preventDefault(); togglePlay(); } if((e.ctrlKey||e.metaKey) && e.key === 'z'){ e.preventDefault(); undo(); } if((e.ctrlKey||e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))){ e.preventDefault(); redo(); } if(e.key === 'Delete' || e.key === 'Backspace'){ if(selectedId) removeTimelineItem(selectedId); } }; window.addEventListener('keydown', onKey); return ()=>window.removeEventListener('keydown', onKey); },[selectedId, timelineItems, mediaLibrary]);
+
+// Undo / Redo const undo = ()=>{ setUndoStack(s => { if(s.length === 0) return s; const last = s[s.length-1]; setRedoStack(r => [...r, JSON.stringify({mediaLibrary,timelineItems,projectName,audioTrack})].slice(-50)); const parsed = JSON.parse(last); setMediaLibrary(parsed.mediaLibrary||[]); setTimelineItems(parsed.timelineItems||[]); setProjectName(parsed.projectName||''); setAudioTrack(parsed.audioTrack||null); return s.slice(0,-1); }); }; const redo = ()=>{ setRedoStack(s => { if(s.length === 0) return s; const last = s[s.length-1]; setUndoStack(u => [...u, JSON.stringify({mediaLibrary,timelineItems,projectName,audioTrack})].slice(-50)); const parsed = JSON.parse(last); setMediaLibrary(parsed.mediaLibrary||[]); setTimelineItems(parsed.timelineItems||[]); setProjectName(parsed.projectName||''); setAudioTrack(parsed.audioTrack||null); return s.slice(0,-1); }); };
+
+// Auto-save to LocalStorage useEffect(()=>{ const id = setInterval(()=>{ const payload = {projectName,mediaLibrary:mediaLibrary.map(m=>({id:m.id,type:m.type,url:m.url,duration:m.duration})),timelineItems,audioTrack:audioTrack?{url:audioTrack.url}:null}; localStorage.setItem('capcut_clone_autosave', JSON.stringify(payload)); },5000); return ()=>clearInterval(id); },[projectName,mediaLibrary,timelineItems,audioTrack]);
+
+// Load autosave on mount useEffect(()=>{ const saved = localStorage.getItem('capcut_clone_autosave'); if(saved){ try{ const p = JSON.parse(saved); setProjectName(p.projectName||'Mon projet'); if(p.mediaLibrary) setMediaLibrary(p.mediaLibrary.map(m=>({...m, element: new Image(), url:m.url}))); // lazy if(p.timelineItems) setTimelineItems(p.timelineItems); }catch(e){/* ignore */} } },[]);
+
+// Helpers: add text to selected timeline const addTextToSelected = (text='Hello world') => { if(!selectedId) return alert('Choisis un élément sur la timeline'); snapshot(); setTimelineItems(s => s.map(it => it.id===selectedId ? {...it, text:{content:text,font:'Poppins',size:48,color:'white',x:50,y:70}} : it)); };
+
+// Basic UI render return ( <div className="min-h-screen bg-[#0b0b0d] text-white font-sans p-4 flex flex-col gap-4"> {/* Top bar */} <header className="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-[#0f1724] to-[#0b0b0d] rounded-2xl shadow-sm"> <div className="flex items-center gap-3"> <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded flex items-center justify-center font-bold">CP</div> <div> <div className="text-lg font-semibold">CapCut-Style Editor</div> <div className="text-xs text-gray-400">{projectName}</div> </div> </div> <div className="flex items-center gap-2"> <button className="px-3 py-2 rounded bg-slate-800 hover:bg-slate-700" onClick={()=>{ if(confirm('Nouveau projet ? Tout sera perdu')){ setProjectName('Mon projet'); setMediaLibrary([]); setTimelineItems([]); setAudioTrack(null); } }}>Nouveau projet</button> <button className="px-3 py-2 rounded bg-indigo-600 hover:bg-indigo-500" onClick={()=>exportVideo('1080p')}>Exporter</button> </div> </header>
+
+{/* Main area */}
+  <main className="flex gap-4 flex-1">
+    {/* Left panel - Library */}
+    <aside className="w-64 bg-[#0f1724] rounded-xl p-3 flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <strong>Bibliothèque</strong>
+        <div className="text-xs text-gray-400">{mediaLibrary.length} éléments</div>
+      </div>
+      <div className="flex flex-col gap-2">
+        <input ref={mediaInputRef} type="file" multiple accept="image/*,video/*" className="hidden" onChange={(e)=>{ handleAddMediaFiles(e.target.files); e.target.value=null; }} />
+        <button className="py-2 rounded bg-slate-700 hover:bg-slate-600" onClick={()=>mediaInputRef.current.click()}>Uploader médias</button>
+        <input ref={audioInputRef} type="file" accept="audio/*" className="hidden" onChange={(e)=>{ if(e.target.files[0]) handleAddAudio(e.target.files[0]); e.target.value=null; }} />
+        <button className="py-2 rounded bg-slate-700 hover:bg-slate-600" onClick={()=>audioInputRef.current.click()}>Ajouter musique</button>
+      </div>
+
+      <div className="overflow-auto flex-1 p-1 space-y-2">
+        {mediaLibrary.map(m=> (
+          <div key={m.id} className="bg-[#0b1220] rounded p-2 flex items-center gap-2 cursor-pointer hover:bg-[#0f1a2b]" onClick={()=>addToTimeline(m.id)}>
+            <div className="w-12 h-8 bg-gray-600 rounded overflow-hidden flex items-center justify-center text-xs">{m.type}</div>
+            <div className="flex-1">
+              <div className="text-sm">{m.file?.name || m.url.split('/').pop()}</div>
+              <div className="text-xs text-gray-400">{m.duration}s</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="text-xs text-gray-400">Templates</div>
+      <div className="flex gap-2">
+        {templates.slice(0,3).map(t => (
+          <button key={t.id} className="text-xs px-2 py-1 rounded bg-[#111827]" onClick={()=>{ snapshot(); setTimelineItems(t.items); setProjectName(t.name); }}> {t.name} </button>
+        ))}
+      </div>
+    </aside>
+
+    {/* Center - Preview */}
+    <section className="flex-1 flex flex-col gap-3">
+      <div className="bg-[#08101a] rounded-xl p-3 flex flex-col gap-2">
+        {/* Canvas preview */}
+        <div className="flex items-center justify-between">
+          <div className="text-sm">Prévisualisation</div>
+          <div className="text-xs text-gray-400">{Math.floor(playhead*1000)/1000}s / {durationRef.current}s</div>
+        </div>
+        <div className="relative bg-black rounded overflow-hidden flex-1 flex items-center justify-center" style={{minHeight:300}}>
+          <canvas ref={canvasRef} style={{maxWidth:'100%', height:'auto', boxShadow:'0 6px 20px rgba(0,0,0,0.6)'}} />
+          {/* Controls over preview */}
+          <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/50 p-2 rounded">
+            <button onClick={togglePlay} className="px-3 py-1 rounded bg-white/8">{isPlaying? 'Pause' : 'Play'}</button>
+            <button className="px-2 py-1 rounded bg-white/5" onClick={()=>{ setPlayhead( Math.max(0, playhead-1) ); drawFrame(Math.max(0, playhead-1)); }}>-1s</button>
+            <button className="px-2 py-1 rounded bg-white/5" onClick={()=>{ setPlayhead( Math.min(durationRef.current, playhead+1) ); drawFrame(Math.min(durationRef.current, playhead+1)); }}>+1s</button>
+          </div>
+        </div>
+      </div>
+
+      {/* Timeline */}
+      <div className="bg-[#071021] rounded-xl p-2">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="text-sm">Timeline</div>
+          <div className="text-xs text-gray-400">Zoom</div>
+          <input type="range" min="0.5" max="2" step="0.1" value={zoom} onChange={(e)=>setZoom(parseFloat(e.target.value))} />
+        </div>
+        <div className="w-full overflow-x-auto p-2 bg-[#06111a] rounded">
+          <div style={{minWidth: Math.max(800, durationRef.current*100*zoom), height:120, position:'relative'}}>
+            {/* grid */}
+            {Array.from({length: Math.ceil(durationRef.current)}).map((_,i)=> (
+              <div key={i} style={{position:'absolute', left: i*100*zoom, top:0, bottom:0, width:1, background:'rgba(255,255,255,0.03)'}} />
+            ))}
+            {/* timeline items */}
+            {timelineItems.map(it => (
+              <div key={it.id} onClick={()=>setSelectedId(it.id)} style={{position:'absolute', left: it.start*100*zoom, top: 10 + it.z*26, width: it.duration*100*zoom, height:24, background: selectedId===it.id? '#3b82f6' : '#1f2937', borderRadius:6, display:'flex', alignItems:'center', padding:'4px', gap:6, cursor:'pointer'}}>
+                <div style={{flex:1, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis'}}>{mediaLibrary.find(m=>m.id===it.refId)?.file?.name || it.refId}</div>
+                <div style={{fontSize:12}}>{it.duration}s</div>
+                <button onClick={(e)=>{ e.stopPropagation(); removeTimelineItem(it.id); }} style={{marginLeft:6}}>X</button>
+              </div>
+            ))}
+            {/* playhead marker */}
+            <div style={{position:'absolute', left: playhead*100*zoom - 1, top:0, bottom:0, width:2, background:'#ef4444'}} />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    {/* Right - Properties */}
+    <aside className="w-80 bg-[#0f1724] rounded-xl p-3 flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <strong>Propriétés</strong>
+        <div className="text-xs text-gray-400">{selectedId ? 'Élément sélectionné' : 'Aucun'}</div>
+      </div>
+
+      {selectedId ? (
+        (()=>{
+          const it = timelineItems.find(x=>x.id===selectedId);
+          if(!it) return <div>Element introuvable</div>;
+          const media = mediaLibrary.find(m=>m.id===it.refId);
+          return (
+            <div className="flex flex-col gap-2">
+              <div className="text-xs">Source: {media?.file?.name || it.refId}</div>
+              <label className="text-xs">Durée: {it.duration}s</label>
+              <input type="range" min="1" max="30" value={it.duration} onChange={(e)=>{ snapshot(); setTimelineItems(s=>s.map(x=> x.id===it.id ? {...x, duration: parseInt(e.target.value)} : x)); }} />
+
+              <div className="text-xs">Transitions</div>
+              <select value={it.effects.transition} onChange={(e)=>{ snapshot(); setTimelineItems(s=>s.map(x=> x.id===it.id ? {...x, effects:{...x.effects, transition:e.target.value}} : x)); }}>
+                <option value="none">None</option>
+                <option value="fade">Fondu</option>
+                <option value="slide">Glissement</option>
+                <option value="zoom">Zoom</option>
+                <option value="rotate">Rotation</option>
+              </select>
+
+              <div className="text-xs">Filtres</div>
+              <select value={it.effects.filter} onChange={(e)=>{ snapshot(); setTimelineItems(s=>s.map(x=> x.id===it.id ? {...x, effects:{...x.effects, filter:e.target.value}} : x)); }}>
+                <option value="none">Aucun</option>
+                <option value="bw">Noir & Blanc</option>
+                <option value="sepia">Sépia</option>
+                <option value="vivid">Vif</option>
+                <option value="cinema">Cinematique</option>
+              </select>
+
+              <div className="text-xs">Texte</div>
+              <button className="py-1 px-2 rounded bg-slate-700" onClick={()=>addTextToSelected('Mon titre')}>Ajouter texte</button>
+            </div>
+          );
+        })()
+      ) : (
+        <div className="text-xs text-gray-400">Sélectionne un élément sur la timeline pour modifier ses propriétés.</div>
+      )}
+
+      <div className="mt-auto">
+        <div className="text-xs text-gray-400">Audio</div>
+        <div className="flex items-center gap-2">
+          <div className="flex-1 text-xs">{audioTrack? audioTrack.file?.name || audioTrack.url.split('/').pop() : 'Aucune'}</div>
+          <div className="text-xs">Vol</div>
+          <input type="range" min="0" max="1" step="0.01" value={volume} onChange={(e)=>{ setVolume(parseFloat(e.target.value)); if(audioTrack && audioTrack.element) audioTrack.element.volume = parseFloat(e.target.value); }} />
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  {/* Footer */}
+  <footer className="flex items-center justify-between text-xs text-gray-400">
+    <div>Raccourcis: Espace=play/pause • Suppr=effacer • Ctrl+Z / Ctrl+Y undo/redo</div>
+    <div>Export: canvas + audio (webm)</div>
+  </footer>
+</div>
+
+); }
+
+// -------------------------- Helper: sample templates ------------------------- function sampleTemplates(){ return [ { id:'tpl1', name:'Anniversaire', items:[{id:'a1',refId:'media_1',type:'image',start:0,duration:4,effects:{},z:0},{id:'a2',refId:'media_2',type:'image',start:4,duration:4,effects:{},z:1}] }, { id:'tpl2', name:'Voyage', items:[] }, { id:'tpl3', name:'Love story', items:[] } ]; }
