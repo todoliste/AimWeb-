@@ -21,7 +21,7 @@
   #controls {
     margin: 10px;
   }
-  input, button {
+  input, button, select {
     margin: 5px;
     padding: 5px 10px;
     font-size: 16px;
@@ -32,6 +32,15 @@
 <h1>Masque Flou Drag & Drop</h1>
 <input type="file" id="upload" accept="image/*">
 <div id="controls">
+  <label>Forme :
+    <select id="shape">
+      <option value="rect">Rectangle</option>
+      <option value="circle">Cercle</option>
+    </select>
+  </label>
+  <label>Flou :
+    <input type="range" id="blurRange" min="0" max="30" value="10">
+  </label>
   <button id="reset">Réinitialiser</button>
 </div>
 <canvas id="canvas" width="800" height="600"></canvas>
@@ -41,13 +50,14 @@ const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const upload = document.getElementById('upload');
 const resetBtn = document.getElementById('reset');
+const shapeSelect = document.getElementById('shape');
+const blurRange = document.getElementById('blurRange');
 
 let img = new Image();
 let mask = {x: 200, y: 150, w: 400, h: 300};
 let dragging = false;
 let offsetX, offsetY;
 
-// Charger l'image
 upload.addEventListener('change', e => {
     const file = e.target.files[0];
     if (!file) return;
@@ -56,16 +66,19 @@ upload.addEventListener('change', e => {
     reader.readAsDataURL(file);
 });
 
-// Dessiner image + masque flou
 function draw() {
     ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.drawImage(img,0,0,canvas.width,canvas.height);
 
-    // Flou dans le masque
+    // Appliquer le flou dans le masque
     ctx.save();
-    ctx.filter = 'blur(10px)';
+    ctx.filter = `blur(${blurRange.value}px)`;
     ctx.beginPath();
-    ctx.rect(mask.x, mask.y, mask.w, mask.h);
+    if(shapeSelect.value === 'rect') {
+        ctx.rect(mask.x, mask.y, mask.w, mask.h);
+    } else {
+        ctx.arc(mask.x + mask.w/2, mask.y + mask.h/2, Math.min(mask.w, mask.h)/2, 0, Math.PI*2);
+    }
     ctx.clip();
     ctx.drawImage(img,0,0,canvas.width,canvas.height);
     ctx.restore();
@@ -73,38 +86,59 @@ function draw() {
     // Contour du masque
     ctx.strokeStyle = '#0f0';
     ctx.lineWidth = 3;
-    ctx.strokeRect(mask.x, mask.y, mask.w, mask.h);
+    ctx.beginPath();
+    if(shapeSelect.value === 'rect') {
+        ctx.strokeRect(mask.x, mask.y, mask.w, mask.h);
+    } else {
+        ctx.arc(mask.x + mask.w/2, mask.y + mask.h/2, Math.min(mask.w, mask.h)/2, 0, Math.PI*2);
+        ctx.stroke();
+    }
 }
 
-// Drag & Drop du rectangle
+// Drag & Drop
 canvas.addEventListener('mousedown', e => {
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    if (x > mask.x && x < mask.x + mask.w && y > mask.y && y < mask.y + mask.h) {
+
+    if(shapeSelect.value === 'rect' &&
+       x > mask.x && x < mask.x + mask.w &&
+       y > mask.y && y < mask.y + mask.h) {
         dragging = true;
         offsetX = x - mask.x;
         offsetY = y - mask.y;
         canvas.style.cursor = 'grabbing';
+    } else if(shapeSelect.value === 'circle') {
+        const cx = mask.x + mask.w/2;
+        const cy = mask.y + mask.h/2;
+        const r = Math.min(mask.w, mask.h)/2;
+        if(Math.hypot(x-cx, y-cy) <= r){
+            dragging = true;
+            offsetX = x - mask.x;
+            offsetY = y - mask.y;
+            canvas.style.cursor = 'grabbing';
+        }
     }
 });
-canvas.addEventListener('mouseup', () => { dragging = false; canvas.style.cursor = 'grab'; });
-canvas.addEventListener('mouseleave', () => { dragging = false; canvas.style.cursor = 'grab'; });
+canvas.addEventListener('mouseup', ()=>{ dragging=false; canvas.style.cursor='grab'; });
+canvas.addEventListener('mouseleave', ()=>{ dragging=false; canvas.style.cursor='grab'; });
 canvas.addEventListener('mousemove', e => {
-    if (!dragging) return;
+    if(!dragging) return;
     const rect = canvas.getBoundingClientRect();
     mask.x = e.clientX - rect.left - offsetX;
     mask.y = e.clientY - rect.top - offsetY;
     draw();
 });
 
-// Reset du masque
+// Reset
 resetBtn.addEventListener('click', () => {
     mask = {x: 200, y: 150, w: 400, h: 300};
     draw();
 });
 
-// Redessiner après chargement de l'image
+// Redessiner après changement flou ou forme
+blurRange.addEventListener('input', draw);
+shapeSelect.addEventListener('change', draw);
 img.onload = draw;
 </script>
 </body>
