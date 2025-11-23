@@ -2,863 +2,730 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>CapCut-style Editor — Vanilla HTML/JS</title>
-
-<!-- Google fonts (10 fonts example) -->
-<link href="https://fonts.googleapis.com/css2?family=Roboto&family=Montserrat&family=Lora&family=Poppins&family=Oswald&family=Merriweather&family=Raleway&family=Playfair+Display&family=Nunito&family=Fira+Sans&display=swap" rel="stylesheet">
-
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>CapCut-like Mobile Editor — HTML Single File</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  /* ========== THEME / LAYOUT ========== */
+  /* ---------- Reset & variables ---------- */
   :root{
-    --bg:#0b0b0d;
+    --bg:#0b0b0f;
     --panel:#0f1724;
-    --muted:#9ca3af;
-    --accent:#7c3aed;
+    --muted:#9aa4b2;
+    --accent:#6d28d9;
+    --accent-2:#06b6d4;
+    --glass: rgba(255,255,255,0.04);
   }
-  *{box-sizing:border-box}
-  html,body{height:100%; margin:0; font-family: Poppins, Roboto, system-ui, -apple-system, "Segoe UI", Arial; background:var(--bg); color:#fff}
-  .app{display:flex;flex-direction:column;gap:12px;padding:12px;height:100%}
-  header{display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:12px;background:linear-gradient(90deg,#0f1724,#0b0b0d)}
-  .logo{display:flex;gap:10px;align-items:center}
-  .logo .badge{width:44px;height:44px;border-radius:10px;background:linear-gradient(90deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-weight:700}
-  .actions button{margin-left:8px;padding:8px 12px;border-radius:8px;border:0;background:#111827;color:#fff;cursor:pointer}
-  .actions .primary{background:linear-gradient(90deg,#4f46e5,#7c3aed)}
-  main{display:flex;gap:12px;flex:1;min-height:0} /* min-height:0 so flex children can scroll */
-  aside.left, aside.right{width:260px;background:var(--panel);padding:12px;border-radius:12px;overflow:auto}
-  .center{flex:1;display:flex;flex-direction:column;gap:12px}
-  .preview{background:#08101a;padding:12px;border-radius:10px}
-  .canvas-wrap{position:relative;min-height:320px;border-radius:8px;overflow:hidden;background:#000;display:flex;align-items:center;justify-content:center}
-  canvas#preview{max-width:100%;height:auto;display:block;box-shadow:0 8px 40px rgba(0,0,0,0.6)}
-  .controls{position:absolute;left:12px;bottom:12px;background:rgba(0,0,0,0.45);padding:8px;border-radius:8px;display:flex;gap:6px;align-items:center}
-  .timeline { background:#071021;padding:10px;border-radius:10px }
-  .timeline-track{overflow-x:auto;padding:8px;border-radius:8px;background:#06111a}
-  .track-canvas{position:relative;height:120px;min-width:800px}
-  .grid-line{position:absolute;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.03)}
-  .item{position:absolute;height:28px;border-radius:6px;display:flex;align-items:center;padding:4px;gap:8px;cursor:pointer;user-select:none}
-  .item .name{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-  .props{display:flex;flex-direction:column;gap:8px}
-  .media-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
-  .media-card{display:flex;gap:8px;align-items:center;padding:8px;border-radius:8px;background:#0b1220;cursor:grab}
-  .media-card .thumb{width:56px;height:40px;border-radius:6px;background:#374151;display:flex;align-items:center;justify-content:center;font-size:12px}
-  footer{display:flex;justify-content:space-between;opacity:0.8}
-  input[type=range]{width:120px}
-  select,button,input[type=text]{background:#0b1220;border:1px solid rgba(255,255,255,0.04);color:#fff;padding:6px;border-radius:6px}
-  .small{font-size:13px;color:var(--muted)}
-  .template-row{display:flex;gap:8px;margin-top:8px}
-  .template-row button{padding:6px 8px;background:#111827;border-radius:8px}
-  /* scrollbars */
-  ::-webkit-scrollbar{height:10px;width:10px}
-  ::-webkit-scrollbar-thumb{background:#1f2937;border-radius:8px}
-  /* responsive */
-  @media (max-width:1000px){ aside.left, aside.right{width:100%} main{flex-direction:column} .track-canvas{min-width:100%} }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{height:100%;margin:0;font-family:Poppins,system-ui,Arial;background:var(--bg);color:#fff;-webkit-font-smoothing:antialiased}
+  button{font-family:inherit}
+  a{color:inherit}
+
+  /* ---------- Mobile App Frame ---------- */
+  .app{max-width:420px;margin:0 auto;height:100vh;display:flex;flex-direction:column;gap:6px;padding:6px}
+  header.topbar{height:56px;background:linear-gradient(90deg,#0b1220,#071022);border-radius:12px;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;box-shadow:0 6px 18px rgba(0,0,0,0.6)}
+  .top-left{display:flex;align-items:center;gap:8px}
+  .badge{width:40px;height:40;border-radius:8px;background:linear-gradient(90deg,#4f46e5,#7c3aed);display:flex;align-items:center;justify-content:center;font-weight:700}
+  .title{display:flex;flex-direction:column}
+  .title .appname{font-weight:700;font-size:14px}
+  .title .project{font-size:11px;color:var(--muted)}
+  .top-actions{display:flex;gap:6px;align-items:center}
+  .icon-btn{background:transparent;border:0;padding:8px;border-radius:8px;color:#fff;opacity:0.95}
+  .icon-btn:active{transform:scale(0.98)}
+
+  /* ---------- Preview ---------- */
+  .preview-wrap{flex:1;display:flex;flex-direction:column;gap:8px}
+  .preview{background:#000;border-radius:12px;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center}
+  canvas#previewCanvas{width:100%;height:auto;display:block;object-fit:cover;background:#000}
+  .preview .overlay-top{position:absolute;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
+  .preview .time{background:rgba(0,0,0,0.45);padding:4px 8px;border-radius:8px;font-size:12px;pointer-events:auto}
+
+  /* ---------- Bottom Toolbar (CapCut-like) ---------- */
+  .toolbox{display:flex;align-items:center;justify-content:space-around;background:linear-gradient(180deg,#071023,#05101a);padding:8px;border-radius:12px}
+  .tool-btn{display:flex;flex-direction:column;align-items:center;gap:4px;color:#dbeafe;font-size:12px;background:transparent;border:0}
+  .tool-btn svg{width:22px;height:22px;opacity:0.95}
+  .tool-btn.active{color:var(--accent);transform:translateY(-6px)}
+
+  /* ---------- Timeline Miniatures (CapCut style) ---------- */
+  .timeline-wrap{height:108px;border-radius:12px;display:flex;flex-direction:column;gap:6px}
+  .timeline-scroll{display:flex;gap:8px;overflow-x:auto;padding:8px;align-items:center}
+  .thumb{width:120px;height:72px;border-radius:8px;background:#0b1220;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative}
+  .thumb img, .thumb video{width:100%;height:100%;object-fit:cover;display:block}
+  .thumb .duration{position:absolute;right:6px;bottom:6px;background:rgba(0,0,0,0.5);padding:3px 6px;border-radius:6px;font-size:12px}
+
+  /* ---------- Edit Panel (slide-up) ---------- */
+  .panel{position:fixed;left:6px;right:6px;bottom:84px;background:linear-gradient(180deg,#07101a,#08111b);border-radius:14px;padding:12px;box-shadow:0 18px 40px rgba(0,0,0,0.6);transform:translateY(110%);transition:transform .28s cubic-bezier(.2,.9,.3,1);z-index:60}
+  .panel.open{transform:translateY(0%)}
+  .panel .handle{width:40px;height:4px;background:rgba(255,255,255,0.06);margin:0 auto;border-radius:4px}
+  .panel .panel-row{display:flex;gap:8px;padding:10px 0;align-items:center;justify-content:space-between}
+  .panel .controls{display:flex;gap:8px;flex-wrap:wrap}
+
+  /* ---------- Properties inside panel ---------- */
+  .prop{background:var(--glass);padding:8px;border-radius:8px;font-size:13px;color:var(--muted)}
+  .prop label{display:block;font-weight:600;margin-bottom:6px;font-size:12px;color:#fff}
+  .prop button{background:linear-gradient(90deg,#0b1220,#111827);padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);color:#fff}
+
+  /* ---------- Small helpers ---------- */
+  .small{font-size:12px;color:var(--muted)}
+  .row{display:flex;align-items:center;gap:8px}
+  input[type=range]{width:100%}
+  .pill{background:rgba(255,255,255,0.03);padding:6px 10px;border-radius:999px;font-weight:600}
+  .accent-btn{background:linear-gradient(90deg,var(--accent),#9f7aea);padding:8px 12px;border-radius:10px;border:0;color:#fff}
+
+  /* ---------- Stickers / text overlay mode UI ---------- */
+  .floating-controls{position:absolute;left:10px;top:10px;display:flex;gap:8px;z-index:40}
+  .badge-small{background:rgba(0,0,0,0.5);padding:6px 8px;border-radius:8px;font-size:12px}
+
+  /* ---------- Export indicator ---------- */
+  .exporting{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.7);padding:12px;border-radius:10px;z-index:999;color:#fff}
+
+  /* ---------- Responsive tweaks ---------- */
+  @media(min-width:430px){ .app{max-width:430px} }
+  @media(max-width:340px){ .thumb{width:100px;height:60px} .tool-btn{font-size:11px} }
 </style>
 </head>
 <body>
-<div class="app">
+<div class="app" id="app">
 
-  <!-- Top bar -->
-  <header>
-    <div class="logo">
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="top-left">
       <div class="badge">CP</div>
-      <div>
-        <div style="font-weight:700">CapCut-Style Editor</div>
-        <div class="small" id="projectName">Mon projet</div>
+      <div class="title">
+        <div class="appname">CapCut — Mobile (Clone)</div>
+        <div class="project small" id="projectName">Mon projet</div>
       </div>
     </div>
 
-    <div class="actions">
-      <button id="newProjectBtn">Nouveau projet</button>
-      <button id="exportBtn" class="primary">Exporter</button>
+    <div class="top-actions">
+      <button id="undoBtn" class="icon-btn" title="Undo">⤺</button>
+      <button id="redoBtn" class="icon-btn" title="Redo">⤻</button>
+      <button id="exportBtn" class="icon-btn" title="Exporter">⤓</button>
     </div>
   </header>
 
-  <main>
-    <!-- LEFT: Library -->
-    <aside class="left">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <strong>Bibliothèque</strong>
-        <div class="small" id="libCount">0 éléments</div>
+  <!-- PREVIEW -->
+  <div class="preview-wrap">
+    <div class="preview" id="preview">
+      <canvas id="previewCanvas" width="1280" height="720"></canvas>
+
+      <div class="floating-controls" id="floatingControls">
+        <div class="badge-small" id="modeBadge">Preview</div>
       </div>
 
-      <!-- upload controls -->
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <input id="mediaInput" type="file" accept="image/*,video/*" multiple style="display:none" />
-        <button onclick="document.getElementById('mediaInput').click()">Uploader médias</button>
-
-        <input id="audioInput" type="file" accept="audio/*" style="display:none" />
-        <button onclick="document.getElementById('audioInput').click()">Ajouter musique</button>
+      <div class="overlay-top">
+        <div class="small" id="resolutionLabel">1080×720</div>
+        <div class="time" id="timeLabel">0.00 / 10.00s</div>
       </div>
+    </div>
 
-      <!-- templates -->
-      <div class="small" style="margin-top:10px">Templates</div>
-      <div class="template-row" id="templatesRow">
-        <button data-template="birthday">Anniversaire</button>
-        <button data-template="travel">Voyage</button>
-        <button data-template="love">Love story</button>
+    <!-- Timeline miniatures -->
+    <div class="timeline-wrap">
+      <div class="timeline-scroll" id="timelineScroll">
+        <!-- thumbnails appended here -->
       </div>
+    </div>
+  </div>
 
-      <!-- media list -->
-      <div class="media-list" id="mediaList" style="margin-top:12px"></div>
-    </aside>
+  <!-- TOOLBOX (CapCut bottom bar layout) -->
+  <div class="toolbox" id="toolbox">
+    <button class="tool-btn" data-tool="edit" title="Edit"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>Edit</button>
+    <button class="tool-btn" data-tool="audio" title="Audio"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>Audio</button>
+    <button class="tool-btn" data-tool="text" title="Text"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M5 4v3h5.5v12h3V7H22V4z"/></svg>Text</button>
+    <button class="tool-btn" data-tool="stickers" title="Stickers"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.04c-4.42 0-8 3.57-8 8a7.95 7.95 0 0 0 1.7 4.85L12 22l6.3-6.11A7.95 7.95 0 0 0 20 10.04c0-4.43-3.58-8-8-8z"/></svg>Stkr</button>
+    <button class="tool-btn" data-tool="effects" title="Effects"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2l2.39 4.85L19 9l-4.29 2.16L12 16l-2.71-4.84L5 9l4.61-2.15z"/></svg>FX</button>
+    <button class="tool-btn" data-tool="export" title="Export">More</button>
+  </div>
 
-    <!-- CENTER: Preview + Timeline -->
-    <section class="center">
-      <div class="preview">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <div>Prévisualisation</div>
-          <div class="small" id="timeLabel">0.00s / 10s</div>
-        </div>
-
-        <!-- Canvas preview -->
-        <div class="canvas-wrap">
-          <canvas id="preview" width="1280" height="720"></canvas>
-
-          <!-- controls -->
-          <div class="controls">
-            <button id="playBtn">Play</button>
-            <button id="back1">-1s</button>
-            <button id="fwd1">+1s</button>
-            <label class="small" style="margin-left:8px">Zoom TL</label>
-            <input id="timelineZoom" type="range" min="0.5" max="2" step="0.1" value="1">
-          </div>
-        </div>
+  <!-- SLIDE-UP PANEL -->
+  <div class="panel" id="panel">
+    <div class="handle"></div>
+    <div class="panel-row">
+      <div class="row">
+        <div class="pill" id="panelTitle">Edit</div>
       </div>
+      <div class="row" style="gap:6px">
+        <button id="applyBtn" class="accent-btn">Appliquer</button>
+        <button id="cancelBtn" class="prop">Annuler</button>
+      </div>
+    </div>
 
-      <!-- timeline -->
-      <div class="timeline">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <div>Timeline</div>
-          <div class="small">Astuce: glisse les éléments depuis la bibliothèque vers la timeline</div>
-        </div>
-        <div class="timeline-track" id="timelineTrack">
-          <div class="track-canvas" id="trackCanvas"></div>
+    <!-- panel content -->
+    <div id="panelContent" style="margin-top:8px">
+      <!-- dynamic controls injected here -->
+      <div class="prop">
+        <label>Outils d'édition</label>
+        <div class="controls" id="editControls">
+          <!-- split, trim, speed, KenBurns, filters -->
+          <button data-action="split">Split</button>
+          <button data-action="trim">Trim</button>
+          <button data-action="kenburn">Ken Burns</button>
+          <button data-action="filter">Filter</button>
+          <button data-action="rotate">Rotate</button>
         </div>
       </div>
-    </section>
 
-    <!-- RIGHT: Properties -->
-    <aside class="right">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <strong>Propriétés</strong>
-        <div class="small" id="selLabel">Aucun</div>
+      <div class="prop" style="margin-top:10px">
+        <label>Texte / Stickers</label>
+        <div class="controls" id="textControls">
+          <button data-action="addText">Ajouter texte</button>
+          <button data-action="addSticker">Ajouter sticker</button>
+        </div>
       </div>
 
-      <div class="props" id="propsArea">
-        <div class="small">Sélectionne un élément dans la timeline pour éditer</div>
+      <div class="prop" style="margin-top:10px">
+        <label>Ajustements</label>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div><label class="small">Luminosité</label><input id="brightness" type="range" min="-1" max="1" step="0.01" value="0"></div>
+          <div><label class="small">Contraste</label><input id="contrast" type="range" min="-1" max="1" step="0.01" value="0"></div>
+          <div><label class="small">Saturation</label><input id="saturation" type="range" min="-1" max="1" step="0.01" value="0"></div>
+        </div>
       </div>
+    </div>
+  </div>
 
-      <hr style="border:0;border-top:1px solid rgba(255,255,255,0.04);margin:8px 0">
+  <!-- EXPORTING INDICATOR -->
+  <div id="exporting" style="display:none" class="exporting">Export en cours…</div>
 
-      <div class="small">Audio</div>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-        <div class="small" id="audioName">Aucune</div>
-        <div style="flex:1"></div>
-        <label class="small">Vol</label>
-        <input id="audioVol" type="range" min="0" max="1" step="0.01" value="1">
-      </div>
-    </aside>
-  </main>
-
-  <footer>
-    <div class="small">Raccourcis: Espace=play/pause • Suppr=effacer • Ctrl+Z / Ctrl+Y undo/redo</div>
-    <div class="small">Export: canvas + audio (webm). Pour MP4 — convertir localement avec ffmpeg.</div>
-  </footer>
 </div>
 
+<!-- hidden inputs for files -->
+<input id="fileInput" type="file" accept="video/*,image/*" style="display:none" multiple />
+<input id="audioInput" type="file" accept="audio/*" style="display:none" />
+
 <script>
-/* ==========================
-   CapCut-style editor (Vanilla JS)
-   - Single-file prototype
-   - Comments throughout
-   ========================== */
+/* ===========================
+   CapCut-like Mobile Editor
+   Single-file HTML + JS prototype
+   =========================== */
 
 /* ---------- State ---------- */
 const state = {
-  projectName: 'Mon projet',
-  media: [], // {id,file,type,url,duration,element,width,height}
-  timeline: [], // {id,refId,type,start,duration,transition,filter,text,z}
-  selected: null,
+  media: [],        // {id, type:image|video, file, url, duration, element, thumb}
+  timeline: [],     // ordered items: {id, mediaId, start, duration, transform, filter, text, z}
+  projectDuration: 10,
   playhead: 0,
   playing: false,
-  zoom: 1,
   fps: 30,
   resolution: {w:1280,h:720},
-  audio: null, // {file,url,element}
+  currentTool: null,
+  selectedThumb: null,
   undoStack: [],
   redoStack: [],
-  duration: 10 // total project duration (s) - will expand based on items
+  audio: null      // {file,url,element}
 };
 
+/* ---------- DOM ---------- */
+const previewCanvas = document.getElementById('previewCanvas');
+const ctx = previewCanvas.getContext('2d');
+const timelineScroll = document.getElementById('timelineScroll');
+const toolbox = document.getElementById('toolbox');
+const panel = document.getElementById('panel');
+const panelTitle = document.getElementById('panelTitle');
+const panelContent = document.getElementById('panelContent');
+const applyBtn = document.getElementById('applyBtn');
+const cancelBtn = document.getElementById('cancelBtn');
+const timeLabel = document.getElementById('timeLabel');
+const resolutionLabel = document.getElementById('resolutionLabel');
+const exportingEl = document.getElementById('exporting');
+const projectNameEl = document.getElementById('projectName');
+const fileInput = document.getElementById('fileInput');
+const audioFileInput = document.getElementById('audioInput');
+const undoBtn = document.getElementById('undoBtn');
+const redoBtn = document.getElementById('redoBtn');
+const exportBtn = document.getElementById('exportBtn');
+const floatingControls = document.getElementById('floatingControls');
+
 /* ---------- Helpers ---------- */
-const $ = (s) => document.querySelector(s);
-const nowId = (p='id') => `${p}_${Math.random().toString(36).slice(2,9)}`;
+const nowId = (p='id')=>`${p}_${Math.random().toString(36).slice(2,9)}`;
+function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
+function pushUndo(){ state.undoStack.push(JSON.stringify({media:state.media.map(m=>({id:m.id, url:m.url, type:m.type, duration:m.duration})), timeline:state.timeline})); if(state.undoStack.length>50) state.undoStack.shift(); state.redoStack=[]; }
+function undo(){ if(!state.undoStack.length) return; state.redoStack.push(JSON.stringify({media:state.media.map(m=>({id:m.id,url:m.url,type:m.type,duration:m.duration})),timeline:state.timeline})); const last = JSON.parse(state.undoStack.pop()); state.media = last.media.map(m=>({...m, element: new Image(), thumb:null})); state.timeline = last.timeline || []; rebuildThumbs(); renderAll(); }
+function redo(){ if(!state.redoStack.length) return; state.undoStack.push(JSON.stringify({media:state.media.map(m=>({id:m.id,url:m.url,type:m.type,duration:m.duration})),timeline:state.timeline})); const last = JSON.parse(state.redoStack.pop()); state.media = last.media.map(m=>({...m, element:new Image(), thumb:null})); state.timeline = last.timeline || []; rebuildThumbs(); renderAll(); }
 
-function pushUndo() {
-  const snap = {
-    media: state.media.map(m=>({id:m.id,type:m.type,url:m.url,duration:m.duration,name:m.file?.name})),
-    timeline: JSON.parse(JSON.stringify(state.timeline)),
-    audio: state.audio?{url:state.audio.url}:null,
-    projectName: state.projectName
-  };
-  state.undoStack.push(snap);
-  if(state.undoStack.length > 50) state.undoStack.shift();
-  state.redoStack = []; // clear redo
-}
-
-function undo() {
-  if(state.undoStack.length===0) return;
-  const last = state.undoStack.pop();
-  state.redoStack.push({
-    media: state.media.map(m=>({id:m.id,type:m.type,url:m.url,duration:m.duration,name:m.file?.name})),
-    timeline: JSON.parse(JSON.stringify(state.timeline)),
-    audio: state.audio?{url:state.audio.url}:null,
-    projectName: state.projectName
-  });
-  state.media = (last.media||[]).map(m=>({...m, element: new Image()}));
-  state.timeline = last.timeline||[];
-  state.audio = last.audio ? {url:last.audio.url, element: new Audio(last.audio.url)} : null;
-  renderAll();
-}
-
-function redo() {
-  if(state.redoStack.length===0) return;
-  const last = state.redoStack.pop();
-  state.undoStack.push({
-    media: state.media.map(m=>({id:m.id,type:m.type,url:m.url,duration:m.duration,name:m.file?.name})),
-    timeline: JSON.parse(JSON.stringify(state.timeline)),
-    audio: state.audio?{url:state.audio.url}:null,
-    projectName: state.projectName
-  });
-  state.media = (last.media||[]).map(m=>({...m, element: new Image()}));
-  state.timeline = last.timeline||[];
-  state.audio = last.audio ? {url:last.audio.url, element: new Audio(last.audio.url)} : null;
-  renderAll();
-}
-
-/* ---------- DOM refs ---------- */
-const canvas = $('#preview');
-const ctx = canvas.getContext('2d');
-const mediaInput = $('#mediaInput');
-const mediaListEl = $('#mediaList');
-const libCountEl = $('#libCount');
-const trackCanvas = $('#trackCanvas');
-const playBtn = $('#playBtn');
-const timeLabel = $('#timeLabel');
-const timelineZoom = $('#timelineZoom');
-const exportBtn = $('#exportBtn');
-const propsArea = $('#propsArea');
-const selLabel = $('#selLabel');
-const audioInput = $('#audioInput');
-const audioName = $('#audioName');
-const audioVol = $('#audioVol');
-const projectNameEl = $('#projectName');
-const templatesRow = $('#templatesRow');
-const newProjectBtn = $('#newProjectBtn');
-
-/* ---------- Rendering helpers ---------- */
-
-function recalcDuration() {
-  // project duration equals max end time of timeline items or minimum 10s
-  const mx = state.timeline.reduce((m,it)=>Math.max(m, it.start + it.duration), 0);
-  state.duration = Math.max(10, Math.ceil(mx));
-}
-
-function renderLibrary() {
-  mediaListEl.innerHTML = '';
-  state.media.forEach(m=>{
-    const div = document.createElement('div');
-    div.className = 'media-card';
-    div.draggable = true;
-    div.dataset.id = m.id;
-    div.innerHTML = `<div class="thumb">${m.type}</div>
-                     <div style="flex:1"><div class="name">${m.file?.name || m.url}</div><div class="small">${m.duration}s</div></div>
-                     <div><button data-add="${m.id}">+</button></div>`;
-    mediaListEl.appendChild(div);
-
-    // on click add to timeline
-    div.querySelector('[data-add]')?.addEventListener('click', (e)=>{
-      e.stopPropagation();
-      addToTimeline(m.id);
-    });
-
-    // dragstart from library -> timeline
-    div.addEventListener('dragstart', (ev)=>{
-      ev.dataTransfer.setData('text/media', m.id);
-    });
-  });
-  libCountEl.textContent = `${state.media.length} éléments`;
-}
-
-function renderTimeline() {
-  recalcDuration();
-  const totalWidth = Math.max(800, state.duration * 100 * state.zoom);
-  trackCanvas.style.minWidth = totalWidth + 'px';
-  trackCanvas.innerHTML = '';
-
-  // grid lines
-  for(let i=0;i<=state.duration;i++){
-    const l = document.createElement('div');
-    l.className = 'grid-line';
-    l.style.left = (i * 100 * state.zoom) + 'px';
-    trackCanvas.appendChild(l);
-  }
-
-  // items
-  state.timeline.forEach((it,index)=>{
-    const el = document.createElement('div');
-    el.className = 'item';
-    el.style.left = (it.start * 100 * state.zoom) + 'px';
-    el.style.top = (10 + (it.z || 0) * 34) + 'px';
-    el.style.width = (it.duration * 100 * state.zoom) + 'px';
-    el.style.background = (state.selected===it.id) ? '#3b82f6' : '#1f2937';
-    el.dataset.id = it.id;
-    el.innerHTML = `<div style="flex:1" class="name">${(state.media.find(m=>m.id===it.refId)?.file?.name)||it.refId}</div>
-                    <div style="font-size:12px;margin-left:6px">${it.duration}s</div>
-                    <div style="margin-left:6px"><button class="del">X</button></div>`;
-
-    // select
-    el.addEventListener('click', (e)=> {
-      e.stopPropagation();
-      state.selected = it.id;
-      renderProps();
-      renderTimeline();
-    });
-
-    // delete button
-    el.querySelector('.del').addEventListener('click', (e)=>{
-      e.stopPropagation();
-      if(!confirm('Supprimer cet élément ?')) return;
-      pushUndo();
-      state.timeline = state.timeline.filter(x=>x.id!==it.id);
-      if(state.selected===it.id) state.selected = null;
-      renderAll();
-    });
-
-    // drag reorder within timeline
-    el.draggable = true;
-    el.addEventListener('dragstart', (ev)=>{
-      ev.dataTransfer.setData('text/timeline', it.id);
-    });
-
-    trackCanvas.appendChild(el);
-  });
-
-  // playhead marker
-  const ph = document.createElement('div');
-  ph.style.position='absolute';
-  ph.style.left = (state.playhead * 100 * state.zoom - 1) + 'px';
-  ph.style.top = '0';
-  ph.style.bottom = '0';
-  ph.style.width = '2px';
-  ph.style.background = '#ef4444';
-  trackCanvas.appendChild(ph);
-}
-
-function renderProps() {
-  if(!state.selected) {
-    selLabel.textContent = 'Aucun';
-    propsArea.innerHTML = `<div class="small">Sélectionne un élément dans la timeline pour éditer</div>`;
-    return;
-  }
-  const it = state.timeline.find(t=>t.id===state.selected);
-  if(!it) { state.selected = null; renderProps(); return; }
-  selLabel.textContent = 'Élément sélectionné';
-  const media = state.media.find(m=>m.id===it.refId);
-  propsArea.innerHTML = '';
-  const wrap = document.createElement('div');
-
-  wrap.innerHTML = `
-    <div class="small">Source: ${media?.file?.name || it.refId}</div>
-    <div>Durée: <input id="propDur" type="range" min="1" max="30" value="${it.duration}"> <span class="small" id="durLabel">${it.duration}s</span></div>
-    <div>Transition:
-      <select id="propTrans">
-        <option value="none">None</option>
-        <option value="fade"${it.transition==='fade'?' selected':''}>Fondu</option>
-        <option value="slide"${it.transition==='slide'?' selected':''}>Glissement</option>
-        <option value="zoom"${it.transition==='zoom'?' selected':''}>Zoom</option>
-      </select>
-    </div>
-    <div>Filtre:
-      <select id="propFilter">
-        <option value="none"${it.filter==='none'?' selected':''}>Aucun</option>
-        <option value="bw"${it.filter==='bw'?' selected':''}>Noir & Blanc</option>
-        <option value="sepia"${it.filter==='sepia'?' selected':''}>Sépia</option>
-        <option value="vivid"${it.filter==='vivid'?' selected':''}>Vif</option>
-        <option value="cinema"${it.filter==='cinema'?' selected':''}>Cinématique</option>
-      </select>
-    </div>
-    <div>Texte: <input id="propText" type="text" placeholder="Ajouter un texte" value="${it.text?it.text.content:''}"></div>
-    <div>Police: <select id="propFont">
-      <option>Poppins</option><option>Roboto</option><option>Montserrat</option><option>Lora</option><option>Oswald</option>
-      <option>Merriweather</option><option>Raleway</option><option>Playfair Display</option><option>Nunito</option><option>Fira Sans</option>
-    </select></div>
-    <div>Position X: <input id="propTX" type="range" min="0" max="${state.resolution.w}" value="${(it.text?.x)||50}"></div>
-    <div>Position Y: <input id="propTY" type="range" min="0" max="${state.resolution.h}" value="${(it.text?.y)||70}"></div>
-  `;
-  propsArea.appendChild(wrap);
-
-  // wire controls
-  $('#propDur').addEventListener('input', (e)=>{
-    pushUndo();
-    it.duration = parseInt(e.target.value);
-    $('#durLabel').textContent = it.duration+'s';
-    renderAll();
-  });
-  $('#propTrans').addEventListener('change', (e)=>{ pushUndo(); it.transition = e.target.value; renderAll(); });
-  $('#propFilter').addEventListener('change', (e)=>{ pushUndo(); it.filter = e.target.value; renderAll(); });
-  $('#propText').addEventListener('change', (e)=>{ pushUndo(); it.text = it.text || {content:''}; it.text.content = e.target.value; renderAll(); });
-  $('#propFont').value = it.text?.font || 'Poppins';
-  $('#propFont').addEventListener('change', (e)=>{ pushUndo(); it.text = it.text || {}; it.text.font = e.target.value; renderAll(); });
-  $('#propTX').addEventListener('input', (e)=>{ pushUndo(); it.text = it.text || {}; it.text.x = parseInt(e.target.value); renderAll(); });
-  $('#propTY').addEventListener('input', (e)=>{ pushUndo(); it.text = it.text || {}; it.text.y = parseInt(e.target.value); renderAll(); });
-}
-
-/* ---------- Draw / Playback ---------- */
-
-function clearCanvas() {
-  ctx.fillStyle = '#111';
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-}
-
-function applyFilter(ctx, filterName) {
-  // returns CSS filter string to apply to ctx.filter
-  switch(filterName){
-    case 'bw': return 'grayscale(100%)';
-    case 'sepia': return 'sepia(60%)';
-    case 'vivid': return 'saturate(1.4) contrast(1.05) brightness(1.02)';
-    case 'cinema': return 'contrast(1.15) saturate(0.9) sepia(6%)';
-    default: return 'none';
-  }
-}
-
-function drawFrame(t) {
-  clearCanvas();
-  // background
-  ctx.fillStyle = '#111';
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-
-  // find items visible at time t, ordered by z
-  const items = state.timeline.filter(it => t >= it.start && t <= it.start + it.duration).sort((a,b)=> (a.z||0)-(b.z||0));
-  // if multiple, draw them in order; simple transition: if an item has transition fade and is within first/last 0.5s, apply alpha
-  items.forEach(it=>{
-    const m = state.media.find(mm=>mm.id===it.refId);
-    if(!m) return;
-    const el = m.element;
-    // compute fit
-    const elw = el.videoWidth || el.naturalWidth || canvas.width;
-    const elh = el.videoHeight || el.naturalHeight || canvas.height;
-    const ratio = Math.min(canvas.width/elw, canvas.height/elh);
-    const w = elw*ratio, h = elh*ratio;
-    const x = (canvas.width - w)/2, y = (canvas.height - h)/2;
-
-    ctx.save();
-
-    // apply filter via ctx.filter
-    const filterStr = applyFilter(ctx, it.filter);
-    ctx.filter = filterStr;
-
-    // transition handling: simple fade or slide
-    let alpha = 1;
-    const localT = t - it.start;
-    const fadeDur = Math.min(0.5, it.duration/3);
-    if(it.transition === 'fade') {
-      if(localT < fadeDur) alpha = localT / fadeDur;
-      if(localT > it.duration - fadeDur) alpha = (it.duration - localT) / fadeDur;
-    } else if(it.transition === 'slide') {
-      // slide from left on enter
-      let slideX = 0;
-      if(localT < fadeDur) slideX = - (1 - (localT/fadeDur)) * canvas.width * 0.3;
-      ctx.translate(slideX,0);
-    } else if(it.transition === 'zoom') {
-      let zoom = 1;
-      if(localT < fadeDur) zoom = 1 + (1 - (localT/fadeDur))*0.1;
-      if(localT > it.duration - fadeDur) zoom = 1 + (1 - ((it.duration - localT)/fadeDur))*0.1;
-      ctx.translate(canvas.width/2, canvas.height/2);
-      ctx.scale(zoom,zoom);
-      ctx.translate(-canvas.width/2, -canvas.height/2);
-    }
-
-    ctx.globalAlpha = alpha;
-
-    try {
-      if(it.type === 'video') {
-        // Ensure video is updated to correct time (for preview smoothness we might set currentTime but avoid heavy seeking)
-        if(el.readyState >= 2) ctx.drawImage(el, x, y, w, h);
-      } else {
-        if(el.complete) ctx.drawImage(el, x, y, w, h);
-      }
-    } catch(e){ /* ignore if not ready */ }
-
-    // draw text overlay if present
-    if(it.text && it.text.content) {
-      ctx.filter = 'none'; // text unaffected by image filter
-      ctx.globalAlpha = 1;
-      ctx.font = `${it.text.size || 48}px ${it.text.font || 'Poppins'}`;
-      ctx.fillStyle = it.text.color || 'white';
-      ctx.shadowColor = 'rgba(0,0,0,0.6)';
-      ctx.shadowBlur = 8;
-      const tx = it.text.x || 50, ty = it.text.y || 70;
-      ctx.fillText(it.text.content, tx, ty);
-    }
-
-    ctx.restore();
-  });
-
-  // timeline overlay (small black bar)
-  ctx.fillStyle = 'rgba(255,255,255,0.03)';
-  ctx.fillRect(0, canvas.height - 60, canvas.width, 60);
-  // playhead indicator (thin)
-  const px = (state.playhead/state.duration) * canvas.width;
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(px, canvas.height - 60, 2, 60);
-}
-
-/* ---------- Playback loop ---------- */
-let rafId = null;
-let startPerf = 0;
-
-function play() {
-  if(state.playing) return;
-  state.playing = true;
-  startPerf = performance.now() - state.playhead * 1000;
-  // start audio if exists
-  if(state.audio && state.audio.element){
-    try {
-      state.audio.element.currentTime = state.playhead;
-      state.audio.element.play();
-    } catch(e) {}
-  }
-  rafId = requestAnimationFrame(tick);
-  playBtn.textContent = 'Pause';
-}
-
-function pause() {
-  if(!state.playing) return;
-  state.playing = false;
-  if(rafId) cancelAnimationFrame(rafId);
-  if(state.audio && state.audio.element) state.audio.element.pause();
-  playBtn.textContent = 'Play';
-}
-
-function tick(ts) {
-  const t = (ts - startPerf)/1000;
-  state.playhead = t;
-  if(t >= state.duration) {
-    state.playhead = state.duration;
-    pause();
-    renderAll();
-    return;
-  }
-  drawFrame(t);
-  timeLabel.textContent = `${state.playhead.toFixed(2)}s / ${state.duration}s`;
-  renderTimeline(); // move playhead marker
-  rafId = requestAnimationFrame(tick);
-}
-
-/* ---------- Media loading ---------- */
-
-mediaInput.addEventListener('change', async (e)=>{
+/* ---------- UI Events ---------- */
+/* Open file picker to add media */
+fileInput.addEventListener('change', async (e)=>{
   const files = Array.from(e.target.files || []);
-  if(files.length===0) return;
+  if(!files.length) return;
   pushUndo();
   for(const f of files){
     const url = URL.createObjectURL(f);
     const type = f.type.startsWith('video') ? 'video' : 'image';
     const id = nowId('m');
     let duration = 5;
-    let element;
-    if(type === 'video'){
-      element = document.createElement('video');
-      element.src = url; element.muted = true; element.preload = 'metadata';
-      await new Promise(res => element.addEventListener('loadedmetadata', res, {once:true}));
-      duration = Math.min(30, Math.max(1, Math.round(element.duration) || 5));
+    let el;
+    if(type==='video'){
+      el = document.createElement('video'); el.src = url; el.preload='metadata'; el.muted=true;
+      await new Promise(res => el.addEventListener('loadedmetadata', res, {once:true})); duration = Math.min(60, Math.max(1, Math.round(el.duration)||5));
     } else {
-      element = new Image();
-      await new Promise(res => { element.onload = res; element.src = url; });
-      duration = 5;
+      el = new Image(); await new Promise(res=>{el.onload=res;el.src=url}); duration=5;
     }
-    state.media.push({id, file:f, type, url, duration, element});
+    state.media.push({id,type,file:f,url,duration,element:el,thumb:null});
   }
-  e.target.value = '';
+  e.target.value='';
+  rebuildThumbs();
   renderAll();
 });
 
-function addToTimeline(mediaId) {
-  pushUndo();
-  const m = state.media.find(x=>x.id===mediaId);
-  if(!m) return;
-  // start at end of last
-  const lastEnd = state.timeline.reduce((mx,it)=>Math.max(mx, it.start + it.duration), 0);
-  const item = {
-    id: nowId('t'),
-    refId: mediaId,
-    type: m.type,
-    start: lastEnd,
-    duration: m.type==='video' ? m.duration : 5,
-    transition: 'none',
-    filter: 'none',
-    text: null,
-    z: state.timeline.length
-  };
-  state.timeline.push(item);
-  renderAll();
-}
-
-/* ---------- Drag & Drop timeline area ---------- */
-// Accept drops into trackCanvas
-trackCanvas.addEventListener('dragover', (e)=>{ e.preventDefault(); trackCanvas.classList.add('drag'); });
-trackCanvas.addEventListener('dragleave', ()=> trackCanvas.classList.remove('drag'));
-trackCanvas.addEventListener('drop', (e)=>{
-  e.preventDefault();
-  trackCanvas.classList.remove('drag');
-  const mediaId = e.dataTransfer.getData('text/media');
-  const tlId = e.dataTransfer.getData('text/timeline');
-  const rect = trackCanvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const time = x / (100 * state.zoom);
-  if(mediaId){
-    pushUndo();
-    const m = state.media.find(m=>m.id===mediaId);
-    if(!m) return;
-    const item = {
-      id: nowId('t'),
-      refId: mediaId,
-      type: m.type,
-      start: Math.max(0, Math.round(time*100)/100),
-      duration: m.type==='video' ? m.duration : 5,
-      transition:'none',filter:'none',text:null,z:state.timeline.length
-    };
-    state.timeline.push(item);
-    renderAll();
-  } else if(tlId){
-    // move existing timeline item to new start
-    pushUndo();
-    const it = state.timeline.find(it=>it.id===tlId);
-    if(it) { it.start = Math.max(0, Math.round(time*100)/100); renderAll(); }
-  }
-});
-
-/* Also allow dragging timeline items between tracks to reorder z */
-trackCanvas.addEventListener('drop', ()=>{}); // handled above
-
-/* ---------- Click handlers ---------- */
-playBtn.addEventListener('click', ()=> state.playing ? pause() : play());
-$('#back1').addEventListener('click', ()=> { state.playhead = Math.max(0, state.playhead - 1); drawFrame(state.playhead); renderTimeline(); timeLabel.textContent = `${state.playhead.toFixed(2)}s / ${state.duration}s`; });
-$('#fwd1').addEventListener('click', ()=> { state.playhead = Math.min(state.duration, state.playhead + 1); drawFrame(state.playhead); renderTimeline(); timeLabel.textContent = `${state.playhead.toFixed(2)}s / ${state.duration}s`; });
-timelineZoom.addEventListener('input', (e)=> { state.zoom = parseFloat(e.target.value); renderTimeline(); });
-
-/* ---------- Audio ---------- */
-audioInput.addEventListener('change', async (e)=>{
+/* Audio input */
+audioFileInput.addEventListener('change', async (e)=>{
   const f = e.target.files[0];
   if(!f) return;
-  pushUndo();
   const url = URL.createObjectURL(f);
-  const audioEl = new Audio(url);
-  audioEl.crossOrigin='anonymous';
-  await new Promise(res=> audioEl.addEventListener('loadedmetadata', res, {once:true}));
-  state.audio = {file:f, url, element: audioEl};
-  audioName.textContent = f.name;
-  audioVol.value = 1;
-  audioVol.dispatchEvent(new Event('input'));
-  e.target.value = '';
-});
-audioVol.addEventListener('input',(e)=>{
-  const v = parseFloat(e.target.value);
-  if(state.audio && state.audio.element) state.audio.element.volume = v;
+  const audio = new Audio(url);
+  audio.crossOrigin='anonymous';
+  await new Promise(res=> audio.addEventListener('loadedmetadata', res, {once:true}));
+  state.audio = {file:f,url,element:audio};
+  e.target.value='';
+  alert('Audio ajouté : ' + f.name);
 });
 
-/* ---------- Export (MediaRecorder + canvas.captureStream) ---------- */
-exportBtn.addEventListener('click', async ()=>{
-  // show resolution choices
-  const format = prompt('Choix export: "720p", "1080p", "1:1", "9:16" (par défaut 1080p)', '1080p') || '1080p';
-  const map = {'720p':{w:1280,h:720}, '1080p':{w:1920,h:1080}, '1:1':{w:1080,h:1080}, '9:16':{w:720,h:1280}};
+/* toolbox tool selection */
+toolbox.addEventListener('click', (e)=>{
+  const btn = e.target.closest('[data-tool]');
+  if(!btn) return;
+  const tool = btn.dataset.tool;
+  setTool(tool);
+});
+
+/* undo/redo/export buttons */
+undoBtn.addEventListener('click', ()=>{ undo(); });
+redoBtn.addEventListener('click', ()=>{ redo(); });
+exportBtn.addEventListener('click', ()=>{ startExport(); });
+
+/* open file from main UI by tapping preview */
+document.getElementById('preview').addEventListener('click', ()=>{
+  // open file selector to add
+  fileInput.click();
+});
+
+/* panel apply/cancel */
+applyBtn.addEventListener('click', ()=>{
+  closePanel(true);
+});
+cancelBtn.addEventListener('click', ()=>{ closePanel(false); });
+
+/* ---------- Tool handling ---------- */
+function setTool(tool){
+  state.currentTool = tool;
+  // highlight active button
+  Array.from(toolbox.querySelectorAll('[data-tool]')).forEach(b=> b.classList.toggle('active', b.dataset.tool===tool));
+  if(tool==='edit') openPanel('Edit', createEditPanel);
+  else if(tool==='audio') openPanel('Audio', createAudioPanel);
+  else if(tool==='text') openPanel('Texte', createTextPanel);
+  else if(tool==='stickers') openPanel('Stickers', createStickerPanel);
+  else if(tool==='effects') openPanel('Effets', createEffectsPanel);
+  else if(tool==='export') openPanel('Export', createExportPanel);
+}
+
+/* ---------- Panel open/close ---------- */
+function openPanel(title, contentFn){
+  panelTitle.textContent = title;
+  panel.classList.add('open');
+  panelContent.innerHTML = '';
+  contentFn(panelContent);
+}
+function closePanel(apply){
+  panel.classList.remove('open');
+  // note: apply handled in panel controls (we call relevant actions within panel)
+}
+
+/* ---------- Panel content creators ---------- */
+function createEditPanel(root){
+  root.innerHTML = '';
+  const html = `
+    <div class="prop"><label>Edition</label>
+      <div class="row" style="gap:8px">
+        <button id="splitBtn">Split</button>
+        <button id="trimBtn">Trim</button>
+        <button id="speedBtn">Speed</button>
+        <button id="kbBtn">Ken Burns</button>
+      </div>
+    </div>
+  `;
+  root.insertAdjacentHTML('beforeend', html);
+  root.querySelector('#splitBtn').addEventListener('click', ()=>{ splitSelected(); });
+  root.querySelector('#trimBtn').addEventListener('click', ()=>{ trimSelected(); });
+  root.querySelector('#kbBtn').addEventListener('click', ()=>{ applyKenBurns(); });
+  root.querySelector('#speedBtn').addEventListener('click', ()=>{ alert('Speed not yet implemented (prototype)'); });
+}
+
+function createAudioPanel(root){
+  root.innerHTML = '';
+  root.insertAdjacentHTML('beforeend', `<div class="prop"><label>Audio</label><div class="row"><button id="pickAudio">Choisir audio</button><div class="small" id="audioName">Aucun</div></div></div>`);
+  root.querySelector('#pickAudio').addEventListener('click', ()=> audioFileInput.click());
+}
+
+function createTextPanel(root){
+  root.innerHTML = '';
+  root.insertAdjacentHTML('beforeend', `<div class="prop"><label>Ajouter texte</label>
+    <input id="txtInput" type="text" placeholder="Tape ton texte ici" style="width:100%;padding:8px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04)"/>
+    <div style="display:flex;gap:8px;margin-top:8px"><button id="addTxtBtn" class="accent-btn">Ajouter</button><button id="txtCancel" class="prop">Annuler</button></div>
+  </div>`);
+  root.querySelector('#addTxtBtn').addEventListener('click', ()=>{
+    const val = root.querySelector('#txtInput').value.trim();
+    if(!val){ alert('Tape un texte'); return; }
+    pushUndo();
+    // add text overlay as special "timeline" item (duration 3s)
+    const textItem = { id: nowId('t'), mediaId:null, start: state.playhead, duration: 3, type:'text', text:{content:val,font:'Poppins',size:42,x:60,y:80,color:'white'}, z: state.timeline.length };
+    state.timeline.push(textItem);
+    renderAll(); closePanel(true);
+  });
+  root.querySelector('#txtCancel').addEventListener('click', ()=> closePanel(false));
+}
+
+function createStickerPanel(root){
+  root.innerHTML = '';
+  const stickerSet = ['⭐','🎉','❤️','📍','🔥'];
+  const html = `<div class="prop"><label>Stickers</label><div class="controls" id="stickersRow"></div></div>`;
+  root.insertAdjacentHTML('beforeend', html);
+  const row = root.querySelector('#stickersRow');
+  stickerSet.forEach(s=>{
+    const b = document.createElement('button'); b.textContent = s; b.style.fontSize='18px'; b.addEventListener('click', ()=>{
+      pushUndo();
+      const stickerItem = { id: nowId('t'), mediaId:null, start: state.playhead, duration:3, type:'sticker', sticker:{icon:s,x: state.resolution.w/2 - 40, y: state.resolution.h/2 - 40, size:72}, z: state.timeline.length };
+      state.timeline.push(stickerItem); renderAll(); closePanel(true);
+    }); row.appendChild(b);
+  });
+}
+
+function createEffectsPanel(root){
+  root.innerHTML = '';
+  root.insertAdjacentHTML('beforeend', `<div class="prop"><label>Filtres rapides</label><div class="controls"><button data-f="none">Aucun</button><button data-f="bw">Noir & Blanc</button><button data-f="sepia">Sépia</button><button data-f="vivid">Vif</button></div></div>`);
+  root.querySelectorAll('[data-f]').forEach(b=> b.addEventListener('click', ()=>{
+    const f = b.dataset.f;
+    pushUndo();
+    // apply filter to selected timeline item or to all items at current playhead
+    const sel = state.timeline.find(t=> t.start <= state.playhead && (t.start + t.duration) >= state.playhead);
+    if(sel){ sel.filter = f; }
+    else state.media.forEach(m=> m.defaultFilter = f);
+    renderAll(); closePanel(true);
+  }));
+}
+
+function createExportPanel(root){
+  root.innerHTML = '';
+  root.insertAdjacentHTML('beforeend', `<div class="prop"><label>Exporter</label>
+    <div style="display:flex;gap:8px"><button id="exp720">720p</button><button id="exp1080">1080p</button><button id="exp9x16">9:16</button></div>
+    <div style="margin-top:8px" class="small">Export: webm via MediaRecorder. Audio possible si le navigateur supporte.</div>
+  </div>`);
+  root.querySelector('#exp720').addEventListener('click', ()=> startExport('720p'));
+  root.querySelector('#exp1080').addEventListener('click', ()=> startExport('1080p'));
+  root.querySelector('#exp9x16').addEventListener('click', ()=> startExport('9:16'));
+}
+
+/* ---------- Timeline / thumbnails ---------- */
+function rebuildThumbs(){
+  timelineScroll.innerHTML = '';
+  state.media.forEach(m=>{
+    const div = document.createElement('div'); div.className='thumb'; div.dataset.id=m.id;
+    if(m.type==='video'){ const v = document.createElement('video'); v.src=m.url; v.muted=true; v.playsInline=true; v.preload='metadata'; div.appendChild(v); } else { const img = document.createElement('img'); img.src=m.url; div.appendChild(img); }
+    const d = document.createElement('div'); d.className='duration'; d.textContent = m.duration + 's'; div.appendChild(d);
+    timelineScroll.appendChild(div);
+
+    // make thumb tappable to add to timeline (append)
+    div.addEventListener('click', ()=>{
+      pushUndo();
+      const id = nowId('t');
+      const lastEnd = state.timeline.reduce((mx,i)=>Math.max(mx, i.start + i.duration), 0);
+      state.timeline.push({id:id, mediaId:m.id, start:lastEnd, duration: m.type==='video'? m.duration : 5, transform:{scale:1,rotate:0}, filter:m.defaultFilter||'none', text:null, z:state.timeline.length, type:'media'});
+      renderAll();
+    });
+
+    // long touch to drag (mobile) -> emulate dragstart using pointer events
+    let touchTimer=null;
+    div.addEventListener('pointerdown',(ev)=>{
+      ev.target.setPointerCapture(ev.pointerId);
+      touchTimer = setTimeout(()=>{ // start "drag" mode: create floating clone
+        const clone = div.cloneNode(true);
+        clone.style.position='fixed'; clone.style.left=ev.clientX-60+'px'; clone.style.top=ev.clientY-40+'px'; clone.style.zIndex=9999; clone.style.opacity=0.9; document.body.appendChild(clone);
+        function move(e){ clone.style.left=e.clientX-60+'px'; clone.style.top=e.clientY-40+'px'; }
+        function up(e){ document.removeEventListener('pointermove',move); document.removeEventListener('pointerup',up); clone.remove(); const dropTarget = document.elementFromPoint(e.clientX,e.clientY); if(dropTarget && dropTarget.closest('.track-area')){ // drop in track area
+            pushUndo();
+            const id = nowId('t'); const rect = trackAreaRect(); const x = e.clientX - rect.left; const time = Math.max(0, x / (previewCanvas.width) * state.projectDuration);
+            state.timeline.push({id:id, mediaId:m.id, start: Math.round(time*100)/100, duration: m.type==='video'? m.duration :5, filter:m.defaultFilter||'none', z: state.timeline.length, type:'media'});
+            renderAll();
+          } }
+        document.addEventListener('pointermove',move); document.addEventListener('pointerup',up);
+      }, 350);
+    });
+    div.addEventListener('pointerup',(ev)=>{ clearTimeout(touchTimer); });
+    div.addEventListener('pointercancel',(ev)=>{ clearTimeout(touchTimer); });
+  });
+}
+
+/* helper to get track area rect */
+function trackAreaRect(){
+  // timeline area mapped to canvas width for time placement
+  const rect = timelineScroll.getBoundingClientRect();
+  return rect;
+}
+
+/* ---------- Draw / Render ---------- */
+function recalcProjectDuration(){
+  const mx = state.timeline.reduce((m,it)=> Math.max(m, it.start + it.duration), 0);
+  state.projectDuration = Math.max(6, Math.ceil(mx));
+}
+
+/* default filter conversion */
+function cssFilterFromName(name, brightness=0, contrast=0, saturation=0){
+  let f = '';
+  if(name==='bw') f += 'grayscale(100%) ';
+  if(name==='sepia') f += 'sepia(60%) ';
+  if(name==='vivid') f += 'saturate(1.4) contrast(1.05) ';
+  if(name==='none') f += '';
+  // adjustments
+  if(brightness) f += `brightness(${1+brightness}) `;
+  if(contrast) f += `contrast(${1+contrast}) `;
+  if(saturation) f += `saturate(${1+saturation}) `;
+  return f.trim();
+}
+
+/* drawFrame at time t */
+function drawFrame(t){
+  // clear canvas
+  ctx.fillStyle = '#000'; ctx.fillRect(0,0, previewCanvas.width, previewCanvas.height);
+  // draw background if any
+  // find items on timeline at t
+  const items = state.timeline.filter(it=> t >= it.start && t <= it.start + it.duration).sort((a,b)=> (a.z||0) - (b.z||0));
+  items.forEach(it=>{
+    if(it.type === 'text'){
+      // draw text only
+      ctx.save();
+      ctx.fillStyle = it.text.color || 'white';
+      ctx.font = `${it.text.size||42}px ${it.text.font||'Poppins'}`;
+      ctx.fillText(it.text.content, it.text.x||60, it.text.y||80);
+      ctx.restore();
+      return;
+    }
+    if(it.type === 'sticker'){
+      ctx.save();
+      ctx.font = `${it.sticker.size||72}px serif`;
+      ctx.fillText(it.sticker.icon, it.sticker.x||60, it.sticker.y||120);
+      ctx.restore();
+      return;
+    }
+    // media item
+    const media = state.media.find(m=> m.id === it.mediaId);
+    if(!media) return;
+    const el = media.element;
+    if(!el) return;
+    // basic fit to canvas preserving ratio
+    const elw = el.videoWidth || el.naturalWidth || previewCanvas.width;
+    const elh = el.videoHeight || el.naturalHeight || previewCanvas.height;
+    const ratio = Math.min(previewCanvas.width / elw, previewCanvas.height / elh);
+    const w = elw * ratio, h = elh * ratio;
+    const x = (previewCanvas.width - w)/2, y = (previewCanvas.height - h)/2;
+    // apply filters (we use ctx.filter; fallback to draw without)
+    ctx.save();
+    ctx.filter = cssFilterFromName(it.filter || media.defaultFilter || 'none', (it.adjustments||{}).brightness||0, (it.adjustments||{}).contrast||0, (it.adjustments||{}).saturation||0);
+    try{
+      if(media.type==='video'){ // ensure video is playing in preview if not exporting
+        if(el.readyState >= 2){ ctx.drawImage(el, x, y, w, h); }
+      } else {
+        if(el.complete) ctx.drawImage(el, x, y, w, h);
+      }
+    } catch(e){}
+    // text overlay
+    if(it.text){
+      ctx.filter = 'none';
+      ctx.font = `${it.text.size||42}px ${it.text.font||'Poppins'}`;
+      ctx.fillStyle = it.text.color || 'white';
+      ctx.fillText(it.text.content, it.text.x || 60, it.text.y || 80);
+    }
+    ctx.restore();
+  });
+
+  // draw UI overlay
+  drawPlayheadMarker();
+}
+
+/* small playhead draw (in canvas bottom) */
+function drawPlayheadMarker(){
+  // bottom bar
+  ctx.fillStyle = 'rgba(255,255,255,0.03)';
+  ctx.fillRect(0, previewCanvas.height - 56, previewCanvas.width, 56);
+  const px = (state.playhead / state.projectDuration) * previewCanvas.width;
+  ctx.fillStyle = '#ef4444';
+  ctx.fillRect(px, previewCanvas.height - 56, 2, 56);
+}
+
+/* global render */
+function renderAll(){
+  recalcProjectDuration();
+  timeLabel.textContent = state.playhead.toFixed(2) + ' / ' + state.projectDuration.toFixed(2) + 's';
+  resolutionLabel.textContent = previewCanvas.width + '×' + previewCanvas.height;
+  rebuildThumbs(); // thumbnails updated
+  // update project name
+  projectNameEl.textContent = 'Mon projet';
+  // ensure video elements play muted for preview
+  state.media.forEach(m=>{
+    if(m.type==='video' && m.element && m.element.paused && state.playing){
+      try{ m.element.currentTime = state.playhead; m.element.muted = true; m.element.play(); }catch(e){}
+    }
+  });
+  drawFrame(state.playhead);
+}
+
+/* ---------- Playback controls ---------- */
+let raf = null, startPerf = 0;
+function play(){
+  if(state.playing) return;
+  state.playing = true;
+  startPerf = performance.now() - state.playhead * 1000;
+  // play all video elements in background to keep frames updated
+  state.media.forEach(m=>{ if(m.type==='video' && m.element){ try{ m.element.currentTime = state.playhead; m.element.muted = true; m.element.play(); }catch(e){} }});
+  if(state.audio && state.audio.element){ try{ state.audio.element.currentTime = state.playhead; state.audio.element.play(); }catch(e){} }
+  raf = requestAnimationFrame(tick);
+  document.getElementById('modeBadge').textContent = 'Playing';
+}
+function pause(){
+  if(!state.playing) return;
+  state.playing = false;
+  if(raf) cancelAnimationFrame(raf);
+  state.media.forEach(m=>{ if(m.type==='video' && m.element){ try{ m.element.pause(); }catch(e){} }});
+  if(state.audio && state.audio.element) state.audio.element.pause();
+  document.getElementById('modeBadge').textContent = 'Preview';
+}
+function tick(ts){
+  const t = (ts - startPerf)/1000;
+  state.playhead = t;
+  if(t >= state.projectDuration){ state.playhead = state.projectDuration; pause(); renderAll(); return; }
+  renderAll();
+  raf = requestAnimationFrame(tick);
+}
+
+/* ---------- Editing operations (Split, Trim, Ken Burns) ---------- */
+function findCurrentItem(){
+  return state.timeline.find(it => it.start <= state.playhead && (it.start + it.duration) >= state.playhead);
+}
+function splitSelected(){
+  const it = findCurrentItem();
+  if(!it) return alert('Rien à split ici');
+  pushUndo();
+  const t = state.playhead;
+  const left = {...it, id: nowId('t'), duration: Math.round((t - it.start)*100)/100};
+  const right = {...it, id: nowId('t'), start: Math.round(t*100)/100, duration: Math.round((it.start + it.duration - t)*100)/100};
+  // remove original and insert left/right
+  state.timeline = state.timeline.filter(i=>i.id!==it.id);
+  state.timeline.push(left); state.timeline.push(right);
+  renderAll();
+  alert('Split effectué');
+}
+function trimSelected(){
+  const it = findCurrentItem();
+  if(!it) return alert('Sélectionne un élément');
+  pushUndo();
+  const newDur = prompt('Nouvelle durée (s)', String(it.duration));
+  const d = parseFloat(newDur);
+  if(isNaN(d) || d<=0) return alert('Durée invalide');
+  it.duration = d;
+  renderAll();
+}
+function applyKenBurns(){
+  const it = findCurrentItem();
+  if(!it) return alert('Aucun média sélectionné pour Ken Burns');
+  pushUndo();
+  it.ken = {type:'kb', startScale:1, endScale:1.15, startX:0, startY:0, endX:20, endY:20}; // placeholder: applied during export/render if needed
+  alert('Ken Burns ajouté (preview simple)');
+}
+
+/* ---------- Export (MediaRecorder) ---------- */
+async function startExport(format='1080p'){
+  const map = {'720p':{w:1280,h:720}, '1080p':{w:1920,h:1080}, '9:16':{w:720,h:1280}};
   const r = map[format] || map['1080p'];
   pushUndo();
-  state.resolution = r;
-  canvas.width = r.w; canvas.height = r.h;
-  // little wait for layout
-  await new Promise(res => setTimeout(res, 200));
-  // prepare streams
-  const canvasStream = canvas.captureStream(state.fps);
-  let mixedStream = canvasStream;
-  if(state.audio && state.audio.element){
-    try {
-      // create an AudioContext and mix streams (canvas has no audio track, so we only need to capture audio element)
-      const audioStream = state.audio.element.captureStream ? state.audio.element.captureStream() : null;
-      if(audioStream){
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const dest = ctx.createMediaStreamDestination();
-        const src2 = ctx.createMediaStreamSource(audioStream);
-        src2.connect(dest);
-        mixedStream = new MediaStream([...canvasStream.getVideoTracks(), ...dest.stream.getAudioTracks()]);
-      } else {
-        // fallback: some browsers don't support captureStream on Audio -> export without audio
-        mixedStream = canvasStream;
-      }
-    } catch(e){
-      console.warn('Audio mixing failed', e);
-      mixedStream = canvasStream;
-    }
+  exportingEl.style.display='block';
+  // set canvas to export size
+  previewCanvas.width = r.w; previewCanvas.height = r.h;
+  renderAll();
+  // create canvas stream
+  const stream = previewCanvas.captureStream(state.fps);
+  let mixedStream = stream;
+  if(state.audio && state.audio.element && state.audio.element.captureStream){
+    try{
+      const audioStream = state.audio.element.captureStream();
+      const ctxAudio = new (window.AudioContext || window.webkitAudioContext)();
+      const dest = ctxAudio.createMediaStreamDestination();
+      const src = ctxAudio.createMediaStreamSource(audioStream);
+      src.connect(dest);
+      mixedStream = new MediaStream([...stream.getVideoTracks(), ...dest.stream.getAudioTracks()]);
+    }catch(e){ console.warn('Audio mix failed', e); }
   }
-
-  const options = { mimeType: 'video/webm;codecs=vp9' };
-  const mr = new MediaRecorder(mixedStream, options);
+  const mime = 'video/webm;codecs=vp9';
+  let mr;
+  try{ mr = new MediaRecorder(mixedStream, {mimeType:mime}); } catch(e){ alert('Export non supporté par ce navigateur'); exportingEl.style.display='none'; return; }
   const chunks = [];
   mr.ondataavailable = (ev)=>{ if(ev.data && ev.data.size) chunks.push(ev.data); };
-  mr.onstop = ()=> {
+  mr.onstop = ()=>{
     const blob = new Blob(chunks, {type:'video/webm'});
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${state.projectName.replace(/\s+/g,'_')}_${Date.now()}.webm`;
-    a.click();
-    // restore preview resolution
-    state.resolution = {w:1280,h:720};
-    canvas.width=state.resolution.w; canvas.height=state.resolution.h;
+    const a = document.createElement('a'); a.href=url; a.download = `project_${Date.now()}.webm`; a.click();
+    // restore canvas
+    previewCanvas.width = state.resolution.w; previewCanvas.height = state.resolution.h;
+    exportingEl.style.display='none';
     renderAll();
   };
-
-  // start audio at 0
-  if(state.audio && state.audio.element){
-    state.audio.element.currentTime = 0;
-    state.audio.element.play();
-  }
+  // start playback from 0
+  state.media.forEach(m=>{ if(m.type==='video' && m.element){ try{ m.element.currentTime=0; m.element.play(); }catch(e){} }});
+  if(state.audio && state.audio.element){ try{ state.audio.element.currentTime=0; state.audio.element.play(); }catch(e){} }
   mr.start(1000);
-
-  // render frames for duration and stop recorder
   const start = performance.now();
   (function renderExport(now){
     const t = (now - start) / 1000;
     drawFrame(t);
-    if(t >= state.duration){
+    if(t >= state.projectDuration){
       mr.stop();
+      state.media.forEach(m=>{ if(m.type==='video' && m.element){ try{ m.element.pause(); }catch(e){} }});
       if(state.audio && state.audio.element) state.audio.element.pause();
       return;
     }
     requestAnimationFrame(renderExport);
   })(performance.now());
-});
-
-/* ---------- Templates ---------- */
-templatesRow.addEventListener('click', (e)=>{
-  const t = e.target.dataset.template;
-  if(!t) return;
-  pushUndo();
-  if(t==='birthday'){
-    // for demo we will create 3 placeholder image items if available
-    if(state.media.length>=3){
-      state.timeline = [
-        {id:nowId('t'), refId: state.media[0].id, type:state.media[0].type, start:0, duration:3, transition:'fade', filter:'vivid', text:{content:'Joyeux Anniversaire', font:'Poppins', size:56, x:80, y:120}, z:0},
-        {id:nowId('t'), refId: state.media[1].id, type:state.media[1].type, start:3, duration:3, transition:'slide', filter:'cinema', text:{content:'Célébration', font:'Poppins', size:44, x:80, y:500}, z:1},
-        {id:nowId('t'), refId: state.media[2].id, type:state.media[2].type, start:6, duration:4, transition:'zoom', filter:'sepia', text:{content:'🎉', font:'Poppins', size:80, x:1000, y:200}, z:2}
-      ];
-    } else {
-      alert('Ajoute au moins 3 médias dans la bibliothèque pour utiliser ce template.');
-    }
-  } else if(t==='travel'){
-    if(state.media.length>=2){
-      state.timeline = [
-        {id:nowId('t'), refId: state.media[0].id, type:state.media[0].type, start:0, duration:4, transition:'slide', filter:'vivid', text:{content:'Voyage', font:'Poppins', size:60, x:60, y:100}, z:0},
-        {id:nowId('t'), refId: state.media[1].id, type:state.media[1].type, start:4, duration:5, transition:'fade', filter:'cinema', text:{content:'Aventure', font:'Poppins', size:48, x:60, y:600}, z:1}
-      ];
-    } else alert('Ajoute au moins 2 médias.');
-  } else if(t==='love'){
-    if(state.media.length>=2){
-      state.timeline = [
-        {id:nowId('t'), refId: state.media[0].id, type:state.media[0].type, start:0, duration:4, transition:'fade', filter:'sepia', text:{content:'Notre Histoire', font:'Poppins', size:56, x:80, y:120}, z:0},
-        {id:nowId('t'), refId: state.media[1].id, type:state.media[1].type, start:4, duration:4, transition:'zoom', filter:'vivid', text:{content:'💖', font:'Poppins', size:80, x:1000, y:300}, z:1}
-      ];
-    } else alert('Ajoute au moins 2 médias.');
-  }
-  renderAll();
-});
-
-/* ---------- Misc UI actions ---------- */
-newProjectBtn.addEventListener('click', ()=>{
-  if(!confirm('Nouveau projet ? Tout sera perdu.')) return;
-  pushUndo();
-  state.media = [];
-  state.timeline = [];
-  state.audio = null;
-  state.selected = null;
-  renderAll();
-});
-
-/* ---------- Persist (autosave) ---------- */
-setInterval(()=>{
-  try {
-    const payload = {
-      projectName: state.projectName,
-      media: state.media.map(m=>({id:m.id,type:m.type,url:m.url,duration:m.duration, name: m.file?.name || ''})),
-      timeline: state.timeline,
-      audio: state.audio?{url:state.audio.url}:null
-    };
-    localStorage.setItem('capcut_autosave', JSON.stringify(payload));
-  } catch(e){}
-}, 4000);
-
-// load autosave if exists
-(function loadAuto(){
-  try {
-    const s = localStorage.getItem('capcut_autosave');
-    if(!s) return;
-    const p = JSON.parse(s);
-    state.projectName = p.projectName || state.projectName;
-    if(p.media) {
-      state.media = p.media.map(m => ({...m, element: new Image()}));
-      // NOTE: local cached images may not be accessible cross-session; user may re-upload for full functionality
-    }
-    state.timeline = p.timeline || [];
-    if(p.audio) state.audio = {url:p.audio.url, element:new Audio(p.audio.url)};
-    renderAll();
-  } catch(e){}
-})();
-
-/* ---------- Keyboard shortcuts ---------- */
-window.addEventListener('keydown', (e)=>{
-  if(e.code === 'Space'){ e.preventDefault(); state.playing ? pause() : play(); }
-  if((e.ctrlKey || e.metaKey) && e.key === 'z'){ e.preventDefault(); undo(); renderAll(); }
-  if((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key==='Z'))){ e.preventDefault(); redo(); renderAll(); }
-  if(e.key === 'Delete' || e.key === 'Backspace'){ if(state.selected) { pushUndo(); state.timeline = state.timeline.filter(x=>x.id!==state.selected); state.selected=null; renderAll(); } }
-});
-
-/* ---------- UI render wrapper ---------- */
-function renderAll() {
-  // update labels
-  projectNameEl.textContent = state.projectName;
-  timeLabel.textContent = `${state.playhead.toFixed(2)}s / ${state.duration}s`;
-  audioName.textContent = state.audio ? (state.audio.file?.name || state.audio.url) : 'Aucune';
-  // ensure all media elements have src set
-  state.media.forEach(m=>{
-    if(!m.element) {
-      m.element = m.type==='video'? document.createElement('video') : new Image();
-      m.element.src = m.url;
-    }
-  });
-  // canvas resolution
-  canvas.width = state.resolution.w;
-  canvas.height = state.resolution.h;
-
-  renderLibrary();
-  renderTimeline();
-  renderProps();
-  // draw current frame at playhead (or static preview)
-  drawFrame(state.playhead);
 }
 
-/* ---------- initial setup ---------- */
-renderAll();
+/* ---------- Utils ---------- */
+function rebuildThumbs(){
+  timelineScroll.innerHTML=''; // will be re-populated by renderAll's rebuild loop
+  // thumbnails constructed via renderAll -> but we need to show media only (not timeline yet)
+  state.media.forEach(m=>{
+    const d = document.createElement('div'); d.className='thumb'; d.dataset.id=m.id;
+    if(m.type==='video'){ const v = document.createElement('video'); v.src=m.url; v.muted=true; v.playsInline=true; v.preload='metadata'; d.appendChild(v); }
+    else { const img = document.createElement('img'); img.src = m.url; d.appendChild(img); }
+    const du = document.createElement('div'); du.className='duration'; du.textContent = m.duration + 's'; d.appendChild(du);
+    timelineScroll.appendChild(d);
+    // click to append item
+    d.addEventListener('click', ()=>{ pushUndo(); const lastEnd = state.timeline.reduce((mx,i)=>Math.max(mx, i.start + i.duration),0); state.timeline.push({id:nowId('t'), mediaId:m.id, start:lastEnd, duration:m.type==='video'? m.duration : 5, filter:m.defaultFilter||'none', z: state.timeline.length, type:'media'}); renderAll(); });
+  });
+}
 
-/* ---------- Extra: Click outside to deselect ---------- */
-document.body.addEventListener('click', (e)=>{
-  if(!e.target.closest('.item')){ state.selected = null; renderAll(); }
+/* ---------- Init & bind minimal controls ---------- */
+/* tap play pause preview */
+document.getElementById('preview').addEventListener('dblclick', ()=>{ state.playing? pause() : play(); });
+document.getElementById('preview').addEventListener('touchstart', (e)=>{ if(e.touches.length===2) { // two-finger double-tap -> play/pause
+  state.playing? pause(): play();
+}});
+
+/* keyboard shortcuts for desktop testing */
+window.addEventListener('keydown', (e)=>{
+  if(e.code==='Space'){ e.preventDefault(); state.playing? pause(): play(); }
+  if((e.ctrlKey||e.metaKey) && e.key==='z'){ undo(); renderAll(); }
+  if((e.ctrlKey||e.metaKey) && (e.key==='y' || (e.shiftKey && e.key==='Z'))){ redo(); renderAll(); }
 });
 
-/* ---------- Final notes in console ---------- */
-console.log('Editor ready — open editor.html in a modern browser.');
+/* initial reset */
+previewCanvas.width = state.resolution.w;
+previewCanvas.height = state.resolution.h;
+renderAll();
 
-/* ---------- End of file ---------- */
+/* ---------- Quick demo content placeholder (so UI not empty) ---------- */
+(async function demoLoad(){
+  // add a sample image (data URI) if user wants instant demo
+  // we won't auto-load external network images to respect offline use; user can tap preview to upload own media
+})();
+
+/* ---------- End of app ---------- */
+
 </script>
 </body>
 </html>
