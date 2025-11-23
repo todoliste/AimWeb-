@@ -5,49 +5,61 @@
 <title>Masque Flou Drag & Drop</title>
 <style>
 body {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background: #111;
-  color: #fff;
-  font-family: sans-serif;
-  margin: 0;
-  padding: 20px;
+  margin:0;
+  font-family:sans-serif;
+  background:#1e1e1e;
+  color:#fff;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:20px;
+}
+h1 {margin-bottom:10px;}
+#canvasContainer {
+  position:relative;
+  border:2px solid #555;
+  background:#000;
 }
 canvas {
-  border: 2px solid #fff;
-  touch-action: none;
+  display:block;
+  max-width:100%;
+  height:auto;
+  cursor:grab;
 }
 #controls {
-  margin: 10px;
+  margin-top:10px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  justify-content:center;
 }
-input, button, select {
-  margin: 5px;
-  padding: 5px 10px;
-  font-size: 16px;
+input, select, button {
+  padding:8px 12px;
+  font-size:14px;
+  border-radius:5px;
+  border:none;
 }
-button { cursor:pointer; }
+button {cursor:pointer; background:#0f0; color:#000; font-weight:bold;}
+input[type="range"] {width:120px;}
 </style>
 </head>
 <body>
-<h1>Masque Flou Drag & Drop</h1>
+<h1>Masque Flou Trend</h1>
 <input type="file" id="upload" accept="image/*">
 <div id="controls">
-  <label>Forme:
-    <select id="shape">
-      <option value="rect">Rectangle</option>
-      <option value="circle">Cercle</option>
-    </select>
-  </label>
-  <label>Flou:
-    <input type="range" id="blurRange" min="0" max="30" value="10">
-  </label>
+  <select id="shape">
+    <option value="rect">Rectangle</option>
+    <option value="circle">Cercle</option>
+  </select>
+  <label>Flou <input type="range" id="blurRange" min="0" max="30" value="10"></label>
   <button id="increase">Agrandir</button>
   <button id="decrease">Réduire</button>
   <button id="reset">Réinitialiser</button>
   <button id="export">Exporter</button>
 </div>
-<canvas id="canvas" width="800" height="600"></canvas>
+<div id="canvasContainer">
+  <canvas id="canvas"></canvas>
+</div>
 
 <script>
 const canvas = document.getElementById('canvas');
@@ -61,24 +73,39 @@ const shapeSelect = document.getElementById('shape');
 const blurRange = document.getElementById('blurRange');
 
 let img = new Image();
-let mask = {x:200,y:150,w:400,h:300};
+let imgScale=1, imgX=0, imgY=0;
+let mask={x:50,y:50,w:200,h:200};
 let dragging=false, dragOffsetX, dragOffsetY;
 
-// Charger l'image
+// Charger image
 upload.addEventListener('change', e=>{
   const file=e.target.files[0];
   if(!file) return;
   const reader=new FileReader();
-  reader.onload=event=>img.src=event.target.result;
+  reader.onload=ev=>{
+    img.src=ev.target.result;
+  };
   reader.readAsDataURL(file);
 });
 
-// Dessiner image + masque
+img.onload = ()=>{
+  // Adapter canvas à l'image sans distorsion
+  const maxWidth=800;
+  const maxHeight=600;
+  let scale=Math.min(maxWidth/img.width, maxHeight/img.height,1);
+  canvas.width=img.width*scale;
+  canvas.height=img.height*scale;
+  imgScale=scale;
+  imgX=0;
+  imgY=0;
+  draw();
+}
+
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  if(img.src) ctx.drawImage(img,0,0,canvas.width,canvas.height);
+  if(img.src) ctx.drawImage(img,imgX,imgY,img.width*imgScale,img.height*imgScale);
 
-  // Effet flou stylé (flou multiple)
+  // Flou stylé (double passage)
   ctx.save();
   ctx.filter=`blur(${blurRange.value}px)`;
   ctx.beginPath();
@@ -86,14 +113,13 @@ function draw(){
   else ctx.arc(mask.x+mask.w/2,mask.y+mask.h/2,Math.min(mask.w,mask.h)/2,0,Math.PI*2);
   ctx.clip();
   if(img.src){
-    ctx.drawImage(img,0,0,canvas.width,canvas.height);
-    // deuxième passage flou pour effet plus “fort”
+    ctx.drawImage(img,imgX,imgY,img.width*imgScale,img.height*imgScale);
     ctx.filter=`blur(${blurRange.value/2}px)`;
-    ctx.drawImage(img,0,0,canvas.width,canvas.height);
+    ctx.drawImage(img,imgX,imgY,img.width*imgScale,img.height*imgScale);
   }
   ctx.restore();
 
-  // Contour du masque
+  // Contour
   ctx.strokeStyle='#0f0';
   ctx.lineWidth=2;
   if(shapeSelect.value==='rect') ctx.strokeRect(mask.x,mask.y,mask.w,mask.h);
@@ -151,22 +177,14 @@ canvas.addEventListener('touchmove', e=>{
 });
 canvas.addEventListener('touchend', ()=>dragging=false);
 
-// Boutons agrandir / réduire
-increaseBtn.addEventListener('click', ()=>{
-  mask.w +=20; mask.h +=20; draw();
-});
-decreaseBtn.addEventListener('click', ()=>{
-  mask.w = Math.max(20,mask.w-20);
-  mask.h = Math.max(20,mask.h-20);
-  draw();
-});
+// Agrandir / réduire
+increaseBtn.addEventListener('click', ()=>{mask.w+=20; mask.h+=20; draw();});
+decreaseBtn.addEventListener('click', ()=>{mask.w=Math.max(20,mask.w-20); mask.h=Math.max(20,mask.h-20); draw();});
 
 // Reset
-resetBtn.addEventListener('click', ()=>{
-  mask={x:200,y:150,w:400,h:300}; draw();
-});
+resetBtn.addEventListener('click', ()=>{mask={x:50,y:50,w:200,h:200}; draw();});
 
-// Export image
+// Export
 exportBtn.addEventListener('click', ()=>{
   const link=document.createElement('a');
   link.download='image_flou.png';
@@ -176,7 +194,6 @@ exportBtn.addEventListener('click', ()=>{
 
 blurRange.addEventListener('input', draw);
 shapeSelect.addEventListener('change', draw);
-img.onload=draw;
 </script>
 </body>
 </html>
