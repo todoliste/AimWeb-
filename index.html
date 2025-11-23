@@ -2,63 +2,81 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Masque Flou Drag & Drop</title>
+<title>Masque Flou Trend Mobile</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body {
   margin:0;
   font-family:sans-serif;
-  background:#1e1e1e;
+  background:#121212;
   color:#fff;
   display:flex;
   flex-direction:column;
   align-items:center;
-  padding:20px;
+  padding:15px;
 }
-h1 {margin-bottom:10px;}
+h1 {margin-bottom:10px; font-size:20px; text-align:center;}
 #canvasContainer {
   position:relative;
-  border:2px solid #555;
+  width:100%;
+  max-width:400px;
+  border-radius:12px;
+  overflow:hidden;
   background:#000;
+  touch-action:none;
 }
 canvas {
+  width:100%;
   display:block;
-  max-width:100%;
-  height:auto;
   cursor:grab;
 }
 #controls {
   margin-top:10px;
+  width:100%;
+  max-width:400px;
   display:flex;
-  flex-wrap:wrap;
+  flex-direction:column;
   gap:10px;
+}
+.control-row {
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
   justify-content:center;
 }
 input, select, button {
-  padding:8px 12px;
+  padding:10px;
   font-size:14px;
-  border-radius:5px;
+  border-radius:8px;
   border:none;
 }
-button {cursor:pointer; background:#0f0; color:#000; font-weight:bold;}
-input[type="range"] {width:120px;}
+button {cursor:pointer; background:#0f0; color:#000; font-weight:bold; flex:1;}
+input[type="range"] {flex:1;}
+select {flex:1;}
 </style>
 </head>
 <body>
 <h1>Masque Flou Trend</h1>
 <input type="file" id="upload" accept="image/*">
-<div id="controls">
-  <select id="shape">
-    <option value="rect">Rectangle</option>
-    <option value="circle">Cercle</option>
-  </select>
-  <label>Flou <input type="range" id="blurRange" min="0" max="30" value="10"></label>
-  <button id="increase">Agrandir</button>
-  <button id="decrease">Réduire</button>
-  <button id="reset">Réinitialiser</button>
-  <button id="export">Exporter</button>
-</div>
 <div id="canvasContainer">
   <canvas id="canvas"></canvas>
+</div>
+<div id="controls">
+  <div class="control-row">
+    <select id="shape">
+      <option value="rect">Rectangle</option>
+      <option value="circle">Cercle</option>
+    </select>
+    <input type="range" id="blurRange" min="0" max="30" value="10">
+  </div>
+  <div class="control-row">
+    <button id="increase">Agrandir</button>
+    <button id="decrease">Réduire</button>
+  </div>
+  <div class="control-row">
+    <button id="reset">Réinitialiser</button>
+    <button id="export">Exporter</button>
+  </div>
 </div>
 
 <script>
@@ -77,27 +95,23 @@ let imgScale=1, imgX=0, imgY=0;
 let mask={x:50,y:50,w:200,h:200};
 let dragging=false, dragOffsetX, dragOffsetY;
 
-// Charger image
+// Charger l'image
 upload.addEventListener('change', e=>{
   const file=e.target.files[0];
   if(!file) return;
   const reader=new FileReader();
-  reader.onload=ev=>{
-    img.src=ev.target.result;
-  };
+  reader.onload=ev=>{ img.src=ev.target.result; };
   reader.readAsDataURL(file);
 });
 
 img.onload = ()=>{
-  // Adapter canvas à l'image sans distorsion
-  const maxWidth=800;
-  const maxHeight=600;
+  const maxWidth=400;
+  const maxHeight=400;
   let scale=Math.min(maxWidth/img.width, maxHeight/img.height,1);
   canvas.width=img.width*scale;
   canvas.height=img.height*scale;
   imgScale=scale;
-  imgX=0;
-  imgY=0;
+  imgX=0; imgY=0;
   draw();
 }
 
@@ -105,7 +119,7 @@ function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   if(img.src) ctx.drawImage(img,imgX,imgY,img.width*imgScale,img.height*imgScale);
 
-  // Flou stylé (double passage)
+  // Flou stylé
   ctx.save();
   ctx.filter=`blur(${blurRange.value}px)`;
   ctx.beginPath();
@@ -118,23 +132,17 @@ function draw(){
     ctx.drawImage(img,imgX,imgY,img.width*imgScale,img.height*imgScale);
   }
   ctx.restore();
-
-  // Contour
-  ctx.strokeStyle='#0f0';
-  ctx.lineWidth=2;
-  if(shapeSelect.value==='rect') ctx.strokeRect(mask.x,mask.y,mask.w,mask.h);
-  else{
-    ctx.beginPath();
-    ctx.arc(mask.x+mask.w/2,mask.y+mask.h/2,Math.min(mask.w,mask.h)/2,0,Math.PI*2);
-    ctx.stroke();
-  }
 }
 
 // Drag & Drop
-canvas.addEventListener('mousedown', e=>{
+function getXY(e){
   const rect=canvas.getBoundingClientRect();
-  const x=e.clientX-rect.left;
-  const y=e.clientY-rect.top;
+  if(e.touches) return {x:e.touches[0].clientX-rect.left, y:e.touches[0].clientY-rect.top};
+  return {x:e.clientX-rect.left, y:e.clientY-rect.top};
+}
+
+function startDrag(e){
+  const {x,y}=getXY(e);
   if(shapeSelect.value==='rect' && x>mask.x && x<mask.x+mask.w && y>mask.y && y<mask.y+mask.h){
     dragging=true; dragOffsetX=x-mask.x; dragOffsetY=y-mask.y;
   } else if(shapeSelect.value==='circle'){
@@ -142,58 +150,42 @@ canvas.addEventListener('mousedown', e=>{
     const r=Math.min(mask.w,mask.h)/2;
     if(Math.hypot(x-cx,y-cy)<=r){dragging=true; dragOffsetX=x-mask.x; dragOffsetY=y-mask.y;}
   }
-});
-canvas.addEventListener('mousemove', e=>{
+}
+function moveDrag(e){
   if(!dragging) return;
-  const rect=canvas.getBoundingClientRect();
-  mask.x=e.clientX-rect.left-dragOffsetX;
-  mask.y=e.clientY-rect.top-dragOffsetY;
+  const {x,y}=getXY(e);
+  mask.x=x-dragOffsetX;
+  mask.y=y-dragOffsetY;
   draw();
-});
-canvas.addEventListener('mouseup', ()=>dragging=false);
-canvas.addEventListener('mouseleave', ()=>dragging=false);
+}
+function endDrag(){dragging=false;}
 
-// Touch support
-canvas.addEventListener('touchstart', e=>{
-  const touch=e.touches[0];
-  const rect=canvas.getBoundingClientRect();
-  const x=touch.clientX-rect.left;
-  const y=touch.clientY-rect.top;
-  if(shapeSelect.value==='rect' && x>mask.x && x<mask.x+mask.w && y>mask.y && y<mask.y+mask.h){
-    dragging=true; dragOffsetX=x-mask.x; dragOffsetY=y-mask.y;
-  } else if(shapeSelect.value==='circle'){
-    const cx=mask.x+mask.w/2, cy=mask.y+mask.h/2;
-    const r=Math.min(mask.w,mask.h)/2;
-    if(Math.hypot(x-cx,y-cy)<=r){dragging=true; dragOffsetX=x-mask.x; dragOffsetY=y-mask.y;}
-  }
-});
-canvas.addEventListener('touchmove', e=>{
-  if(!dragging) return;
-  const touch=e.touches[0];
-  const rect=canvas.getBoundingClientRect();
-  mask.x=touch.clientX-rect.left-dragOffsetX;
-  mask.y=touch.clientY-rect.top-dragOffsetY;
-  draw();
-});
-canvas.addEventListener('touchend', ()=>dragging=false);
+canvas.addEventListener('mousedown',startDrag);
+canvas.addEventListener('mousemove',moveDrag);
+canvas.addEventListener('mouseup',endDrag);
+canvas.addEventListener('mouseleave',endDrag);
 
-// Agrandir / réduire
-increaseBtn.addEventListener('click', ()=>{mask.w+=20; mask.h+=20; draw();});
-decreaseBtn.addEventListener('click', ()=>{mask.w=Math.max(20,mask.w-20); mask.h=Math.max(20,mask.h-20); draw();});
+canvas.addEventListener('touchstart',e=>{startDrag(e); e.preventDefault();});
+canvas.addEventListener('touchmove',e=>{moveDrag(e); e.preventDefault();});
+canvas.addEventListener('touchend',endDrag);
+
+// Boutons agrandir/réduire
+increaseBtn.addEventListener('click',()=>{mask.w+=20; mask.h+=20; draw();});
+decreaseBtn.addEventListener('click',()=>{mask.w=Math.max(20,mask.w-20); mask.h=Math.max(20,mask.h-20); draw();});
 
 // Reset
-resetBtn.addEventListener('click', ()=>{mask={x:50,y:50,w:200,h:200}; draw();});
+resetBtn.addEventListener('click',()=>{mask={x:50,y:50,w:200,h:200}; draw();});
 
 // Export
-exportBtn.addEventListener('click', ()=>{
+exportBtn.addEventListener('click',()=>{
   const link=document.createElement('a');
   link.download='image_flou.png';
   link.href=canvas.toDataURL('image/png');
   link.click();
 });
 
-blurRange.addEventListener('input', draw);
-shapeSelect.addEventListener('change', draw);
+blurRange.addEventListener('input',draw);
+shapeSelect.addEventListener('change',draw);
 </script>
 </body>
 </html>
