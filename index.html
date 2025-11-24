@@ -1,112 +1,45 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>QRForge Pro</title>
+<title>QRForge Ultimate</title>
 <style>
 :root{
-    --bg:#0d0d0d;
-    --card:#1a1a1a;
-    --text:white;
-    --input:#2b2b2b;
-    --accent:#00c4ff;
+  --bg:#0d0d0d; --card:#1a1a1a; --text:white; --input:#2b2b2b; --accent:#00c4ff;
 }
 [data-theme="light"]{
-    --bg:#f2f2f2;
-    --card:#fff;
-    --text:#111;
-    --input:#e5e5e5;
-    --accent:#007acc;
+  --bg:#f2f2f2; --card:#fff; --text:#111; --input:#e5e5e5; --accent:#007acc;
 }
 body{
-    margin:0;
-    font-family:Arial,sans-serif;
-    background:var(--bg);
-    color:var(--text);
+  margin:0; font-family:Arial,sans-serif; background:var(--bg); color:var(--text);
 }
 .card{
-    background:var(--card);
-    border-radius:15px;
-    padding:20px;
-    max-width:400px;
-    margin:15px auto;
-    box-shadow:0 0 15px rgba(0,0,0,0.4);
+  background:var(--card); border-radius:15px; padding:20px; max-width:400px; margin:15px auto;
+  box-shadow:0 0 15px rgba(0,0,0,0.4); transition:0.3s;
 }
-input,select,button{
-    width:100%;
-    padding:12px;
-    margin-top:10px;
-    border-radius:10px;
-    border:none;
-    font-size:16px;
-}
-input,select{
-    background:var(--input);
-    color:var(--text);
-}
-button{
-    background:var(--accent);
-    color:black;
-    font-weight:bold;
-    cursor:pointer;
-}
-button:active{
-    transform:scale(0.97);
-}
-.topbar{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    padding:10px 20px;
-    background:var(--card);
-}
-.bottomNav{
-    position:fixed;
-    bottom:0;
-    left:0;
-    width:100%;
-    display:flex;
-    justify-content:space-around;
-    background:var(--card);
-    padding:10px 0;
-    border-top:1px solid #333;
-}
-.navBtn{
-    cursor:pointer;
-    padding:6px 12px;
-    border-radius:10px;
-}
-.navActive{
-    background:var(--accent);
-    color:black;
-}
-#qrcode{
-    background:white;
-    padding:10px;
-    margin:10px auto;
-    border-radius:10px;
-    width:fit-content;
-}
-.historyItem{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    padding:8px;
-    margin:8px 0;
-    border-radius:10px;
-    background:var(--input);
-}
-.historyItem img{
-    width:50px;
-    height:50px;
-    margin-left:10px;
-}
+.card:hover{box-shadow:0 0 25px rgba(0,0,0,0.6);}
+input,select,button{width:100%; padding:12px; margin-top:10px; border-radius:10px; border:none; font-size:16px;}
+input,select{background:var(--input); color:var(--text);}
+button{background:var(--accent); color:black; font-weight:bold; cursor:pointer; transition:0.2s;}
+button:hover{opacity:0.85;}
+button:active{transform:scale(0.97);}
+.topbar{display:flex; justify-content:space-between; align-items:center; padding:10px 20px; background:var(--card);}
+.bottomNav{position:fixed; bottom:0; left:0; width:100%; display:flex; justify-content:space-around; background:var(--card); padding:10px 0; border-top:1px solid #333;}
+.navBtn{cursor:pointer; padding:6px 12px; border-radius:10px; transition:0.2s;}
+.navActive{background:var(--accent); color:black;}
+#qrcode{background:white; padding:10px; margin:10px auto; border-radius:20px; width:fit-content; position:relative;}
+#qrcode img{border-radius:20px;}
+.historyItem{display:flex; align-items:center; justify-content:space-between; padding:8px; margin:8px 0; border-radius:12px; background:var(--input); transition:0.3s;}
+.historyItem:hover{transform:scale(1.02);}
+.historyItem img{width:50px; height:50px; border-radius:12px; margin-left:10px;}
+.historyContent{flex:1;}
 </style>
 </head>
 <body data-theme="dark">
 
-<!-- LOGIN PAGE -->
+<!-- LOGIN -->
 <div id="loginPage" class="card" style="margin-top:50px;">
 <h2>Connexion</h2>
 <input type="email" id="email" placeholder="Email">
@@ -114,20 +47,13 @@ button:active{
 <button onclick="login()">Se connecter</button>
 </div>
 
-<!-- APP PAGE -->
+<!-- APP -->
 <div id="appPage" style="display:none;">
-<div class="topbar">
-<h2>QRForge</h2>
-<button onclick="logout()">Déconnexion</button>
-</div>
-
+<div class="topbar"><h2>QRForge</h2><button onclick="logout()">Déconnexion</button></div>
 <div class="card">
-<label>Nom du QR (obligatoire)</label>
-<input type="text" id="qrName" placeholder="Ex: Mon QR perso">
-<label>Texte / Lien</label>
-<input type="text" id="text" placeholder="Tape ici…">
-<label>Couleur du QR</label>
-<input type="color" id="color" value="#000000">
+<label>Nom du QR (obligatoire)</label><input type="text" id="qrName" placeholder="Ex: Mon QR">
+<label>Texte / Lien</label><input type="text" id="text" placeholder="Tape ici…">
+<label>Couleur du QR</label><input type="color" id="color" value="#000000">
 <label>Taille</label>
 <select id="size">
 <option value="150">150px</option>
@@ -140,34 +66,23 @@ button:active{
 </div>
 </div>
 
-<!-- HISTORIQUE PAGE -->
+<!-- HISTORIQUE -->
 <div id="historyPage" style="display:none;">
-<div class="topbar">
-<h2>Historique</h2>
-<button onclick="logout()">Déconnexion</button>
-</div>
-<div class="card" id="historyList">
-<p>Aucun QR généré.</p>
-</div>
+<div class="topbar"><h2>Historique</h2><button onclick="logout()">Déconnexion</button></div>
+<div class="card" id="historyList"><p>Aucun QR généré.</p></div>
 </div>
 
-<!-- PROFIL PAGE -->
+<!-- PROFIL -->
 <div id="profilePage" style="display:none;">
-<div class="topbar">
-<h2>Profil</h2>
-<button onclick="logout()">Déconnexion</button>
-</div>
+<div class="topbar"><h2>Profil</h2><button onclick="logout()">Déconnexion</button></div>
 <div class="card">
 <p><strong>Email :</strong> <span id="userEmail"></span></p>
 <label>Thème :</label>
-<select id="themeSelect">
-<option value="dark">Sombre</option>
-<option value="light">Clair</option>
-</select>
+<select id="themeSelect"><option value="dark">Sombre</option><option value="light">Clair</option></select>
 </div>
 </div>
 
-<!-- NAVIGATION -->
+<!-- NAV -->
 <div class="bottomNav">
 <div class="navBtn navActive" onclick="switchPage('appPage',this)">QR</div>
 <div class="navBtn" onclick="switchPage('historyPage',this)">Historique</div>
@@ -184,10 +99,7 @@ if(!email||!pass){alert("Remplis tout.");return;}
 localStorage.setItem("qr_user",email);
 showApp();
 }
-function logout(){
-localStorage.removeItem("qr_user");
-location.reload();
-}
+function logout(){localStorage.removeItem("qr_user");location.reload();}
 function showApp(){
 document.getElementById("loginPage").style.display="none";
 document.getElementById("appPage").style.display="block";
@@ -206,14 +118,22 @@ const themeSelect=document.getElementById("themeSelect");
 themeSelect.addEventListener("change",()=>document.body.setAttribute("data-theme",themeSelect.value));
 // ---------- QR GENERATION ----------
 let qrDiv=document.getElementById("qrcode"),qr;
+let logoSrc="https://upload.wikimedia.org/wikipedia/commons/6/6b/QR_Code.png"; // placeholder logo
 function genererQR(){
 let name=document.getElementById("qrName").value.trim();
 let txt=document.getElementById("text").value.trim();
 let color=document.getElementById("color").value;
-let size=document.getElementById("size").value;
+let size=parseInt(document.getElementById("size").value);
 if(!txt||!name) return;
 qrDiv.innerHTML="";
 qr=new QRCode(qrDiv,{text:txt,width:size,height:size,colorDark:color,colorLight:"#fff"});
+// ajouter logo au centre
+let img=document.createElement("img");
+img.src=logoSrc;
+img.style.width=(size/4)+"px"; img.style.height=(size/4)+"px";
+img.style.position="absolute"; img.style.top="50%"; img.style.left="50%";
+img.style.transform="translate(-50%,-50%)"; img.style.pointerEvents="none";
+qrDiv.appendChild(img);
 saveHistory(name,txt,color,size);
 }
 document.getElementById("text").addEventListener("input",genererQR);
@@ -222,45 +142,84 @@ document.getElementById("size").addEventListener("change",genererQR);
 document.getElementById("qrName").addEventListener("input",genererQR);
 // ---------- DOWNLOAD ----------
 document.getElementById("downloadBtn").onclick=()=>{
-let img=qrDiv.querySelector("img");
-if(!img){alert("Génère le QR d'abord!");return;}
-let link=document.createElement("a");
-link.href=img.src;
-link.download=document.getElementById("qrName").value+".png";
-link.click();
-};
-// ---------- HISTORIQUE ----------
+let qrImg=qrDiv.querySelector("img");
+if(!qrImg){alert("Génère le QR d'abord!");return;}
+// créer canvas pour merger QR + logo
+let qrCanvas=document.createElement("canvas");
+let imgQr=qrDiv.querySelector("img");
+let qrCanvasElem=qrDiv.querySelector("canvas");
+if(qrCanvasElem){qrCanvas.width=qrCanvasElem.width; qrCanvas.height=qrCanvasElem.height; let ctx=qrCanvas.getContext("2d"); ctx.drawImage(qrCanvasElem,0,0); let logo=new Image(); logo.src=logoSrc; logo.onload=()=>{ctx.drawImage(logo,(qrCanvas.width/2)-(qrCanvas.width/8),(qrCanvas.height/2)-(qrCanvas.height/8),qrCanvas.width/4,qrCanvas.height/4); let link=document.createElement("a"); link.href=qrCanvas.toDataURL(); link.download=document.getElementById("qrName").value+".png"; link.click(); }}};// ---------- HISTORIQUE ----------
 function saveHistory(name,txt,color,size){
-let history=JSON.parse(localStorage.getItem("qr_history")||"[]");
-let timestamp=new Date().toLocaleString();
-let entry={name,txt,color,size,timestamp};
-history.unshift(entry);
-if(history.length>20) history.pop();
-localStorage.setItem("qr_history",JSON.stringify(history));
-loadHistory();
+    let history=JSON.parse(localStorage.getItem("qr_history")||"[]");
+    let timestamp=new Date().toLocaleString();
+    let entry={name,txt,color,size};
+    history.unshift(entry);
+    if(history.length>20) history.pop(); // max 20 QR
+    localStorage.setItem("qr_history",JSON.stringify(history));
+    loadHistory();
 }
+
 function loadHistory(){
-let list=document.getElementById("historyList");
-let history=JSON.parse(localStorage.getItem("qr_history")||"[]");
-list.innerHTML="";
-if(history.length==0){list.innerHTML="<p>Aucun QR généré.</p>";return;}
-history.forEach(item=>{
-let div=document.createElement("div");
-div.className="historyItem";
-let qrBox=document.createElement("div");
-let qrTemp=document.createElement("div");
-new QRCode(qrTemp,{text:item.txt,width:50,height:50,colorDark:item.color,colorLight:"#fff"});
-qrBox.appendChild(qrTemp);
-div.innerHTML=`<div><strong>${item.name}</strong><br>${item.timestamp}</div>`;
-div.appendChild(qrBox);
-let dlBtn=document.createElement("button");
-dlBtn.textContent="Télécharger";
-dlBtn.style.marginLeft="10px";
-dlBtn.onclick=()=>{let img=qrTemp.querySelector("img");if(img){let link=document.createElement("a");link.href=img.src;link.download=item.name+".png";link.click();}};
-div.appendChild(dlBtn);
-list.appendChild(div);
-});
+    let list=document.getElementById("historyList");
+    let history=JSON.parse(localStorage.getItem("qr_history")||"[]");
+    list.innerHTML="";
+    if(history.length==0){list.innerHTML="<p>Aucun QR généré.</p>"; return;}
+    history.forEach(item=>{
+        let div=document.createElement("div");
+        div.className="historyItem";
+        
+        // QR miniature
+        let qrBox=document.createElement("div");
+        qrBox.style.position="relative";
+        let qrMini=document.createElement("div");
+        new QRCode(qrMini,{text:item.txt,width:50,height:50,colorDark:item.color,colorLight:"#fff"});
+        qrBox.appendChild(qrMini);
+        // logo miniature
+        let logoMini=document.createElement("img");
+        logoMini.src=logoSrc;
+        logoMini.style.width="12px";
+        logoMini.style.height="12px";
+        logoMini.style.position="absolute";
+        logoMini.style.top="50%";
+        logoMini.style.left="50%";
+        logoMini.style.transform="translate(-50%,-50%)";
+        qrBox.appendChild(logoMini);
+        
+        // texte nom + date
+        let infoDiv=document.createElement("div");
+        infoDiv.className="historyContent";
+        infoDiv.innerHTML=`<strong>${item.name}</strong><br>${new Date().toLocaleString()}`;
+        
+        // bouton download
+        let dlBtn=document.createElement("button");
+        dlBtn.textContent="Télécharger";
+        dlBtn.onclick=()=>{
+            let qrCanvas=document.createElement("canvas");
+            let qrCanvasElem=qrMini.querySelector("canvas");
+            if(qrCanvasElem){
+                qrCanvas.width=qrCanvasElem.width;
+                qrCanvas.height=qrCanvasElem.height;
+                let ctx=qrCanvas.getContext("2d");
+                ctx.drawImage(qrCanvasElem,0,0);
+                let logo=new Image();
+                logo.src=logoSrc;
+                logo.onload=()=>{
+                    ctx.drawImage(logo,(qrCanvas.width/2)-(qrCanvas.width/8),(qrCanvas.height/2)-(qrCanvas.height/8),qrCanvas.width/4,qrCanvas.height/4);
+                    let link=document.createElement("a");
+                    link.href=qrCanvas.toDataURL();
+                    link.download=item.name+".png";
+                    link.click();
+                }
+            }
+        };
+        
+        div.appendChild(infoDiv);
+        div.appendChild(qrBox);
+        div.appendChild(dlBtn);
+        list.appendChild(div);
+    });
 }
+
 // ---------- AUTO LOGIN ----------
 if(localStorage.getItem("qr_user")) showApp();
 </script>
