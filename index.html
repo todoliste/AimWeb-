@@ -17,6 +17,12 @@ body{
 .topbar{
   display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:var(--card); box-shadow:0 2px 10px rgba(0,0,0,0.3);
 }
+.tabs{display:flex; justify-content:center; margin:10px 0;}
+.tabBtn{
+  padding:10px 20px; margin:0 5px; cursor:pointer; border:none; border-radius:12px; font-weight:bold;
+  background:var(--card); color:var(--text); transition:0.3s;
+}
+.tabBtn.active{background:var(--accent); color:black;}
 .card{
   background:rgba(255,255,255,0.05); backdrop-filter:blur(10px); border-radius:20px; padding:25px; max-width:400px; margin:20px auto; box-shadow:0 8px 25px rgba(0,0,0,0.5); transition:0.3s;
 }
@@ -51,6 +57,13 @@ button:active{transform:scale(0.97);}
 </select>
 </div>
 
+<div class="tabs">
+<button class="tabBtn active" onclick="switchTab('qrTab',this)">QR Code</button>
+<button class="tabBtn" onclick="switchTab('historyTab',this)">Historique</button>
+</div>
+
+<!-- QR CODE SECTION -->
+<div id="qrTab">
 <div class="card">
 <label>Nom du QR (obligatoire)</label>
 <input type="text" id="qrName" placeholder="Ex: Mon QR">
@@ -67,11 +80,16 @@ button:active{transform:scale(0.97);}
 </select>
 <button id="generateBtn">Générer le QR</button>
 <div id="qrcode"></div>
+<button id="downloadBtn">Télécharger QR</button>
+</div>
 </div>
 
+<!-- HISTORIQUE SECTION -->
+<div id="historyTab" style="display:none;">
 <div class="card">
 <h3>Historique</h3>
 <div id="historyList"><p>Aucun QR généré.</p></div>
+</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
@@ -80,10 +98,18 @@ button:active{transform:scale(0.97);}
 const themeSelect=document.getElementById("themeSelect");
 themeSelect.addEventListener("change",()=>document.body.setAttribute("data-theme",themeSelect.value));
 
-// GENERATE QR
+// TAB SWITCH
+function switchTab(tabId,btn){
+  document.getElementById('qrTab').style.display='none';
+  document.getElementById('historyTab').style.display='none';
+  document.getElementById(tabId).style.display='block';
+  document.querySelectorAll('.tabBtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// QR GENERATION
 const qrDiv=document.getElementById("qrcode");
 let qr;
-
 document.getElementById("generateBtn").addEventListener("click",()=>{
   let name=document.getElementById("qrName").value.trim();
   let txt=document.getElementById("text").value.trim();
@@ -97,16 +123,16 @@ document.getElementById("generateBtn").addEventListener("click",()=>{
 });
 
 // DOWNLOAD FUNCTION
-function downloadQR(qrElement,name){
-  let canvas=qrElement.querySelector("canvas");
-  if(!canvas) return;
+document.getElementById("downloadBtn").onclick=()=>{
+  let qrCanvasElem=qrDiv.querySelector("canvas");
+  if(!qrCanvasElem){alert("Génère le QR d'abord!"); return;}
   let link=document.createElement("a");
-  link.href=canvas.toDataURL();
-  link.download=name+".png";
+  link.href=qrCanvasElem.toDataURL();
+  link.download=document.getElementById("qrName").value+".png";
   link.click();
-}
+};
 
-// HISTORY
+// HISTORY MANAGEMENT
 function saveHistory(name,txt,color,size){
   let history=JSON.parse(localStorage.getItem("qr_history")||"[]");
   history.unshift({name,txt,color,size,date:new Date().toLocaleString()});
@@ -129,7 +155,14 @@ function loadHistory(){
     new QRCode(qrMini,{text:item.txt,width:100,height:100,colorDark:item.color,colorLight:"#fff"});
     qrBox.appendChild(qrMini);
     let dlBtn=document.createElement("button"); dlBtn.textContent="Télécharger";
-    dlBtn.onclick=()=>downloadQR(qrMini,item.name);
+    dlBtn.onclick=()=>{ 
+      let canvas=qrMini.querySelector("canvas");
+      if(!canvas) return;
+      let link=document.createElement("a");
+      link.href=canvas.toDataURL();
+      link.download=item.name+".png";
+      link.click();
+    };
     div.appendChild(info);
     div.appendChild(qrBox);
     div.appendChild(dlBtn);
